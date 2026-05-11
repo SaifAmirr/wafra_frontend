@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:wafra_frontend/screens/individual_profile_screen.dart';
+import 'package:wafra_frontend/screens/restaurant_profile_screen.dart';
 
 enum UserRole { restaurant, individual, foodBank }
 
@@ -12,6 +14,24 @@ class RoleSelectionScreen extends StatefulWidget {
 
 class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   UserRole? _selectedRole;
+
+  void _navigateToProfile(BuildContext context) {
+    // TODO: send selected role to backend before navigating
+    switch (_selectedRole) {
+      case UserRole.restaurant:
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const RestaurantProfileScreen()),
+        );
+      case UserRole.individual:
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const IndividualProfileScreen()),
+        );
+      case UserRole.foodBank:
+      case null:
+        // TODO: navigate to food bank profile screen
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -104,9 +124,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                 child: ElevatedButton(
                   onPressed: _selectedRole == null
                       ? null
-                      : () {
-                          // TODO: submit selected role to backend
-                        },
+                      : () => _navigateToProfile(context),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1A5C38),
                     disabledBackgroundColor:
