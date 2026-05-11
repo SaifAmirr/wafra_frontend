@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:wafra_frontend/screens/signup_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -49,7 +50,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _navigateForward() {
-    // TODO: navigate to RoleSelectionScreen
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const SignUpScreen()),
+    );
   }
 
   @override
