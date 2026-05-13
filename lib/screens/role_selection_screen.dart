@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wafra_frontend/screens/individual_profile_screen.dart';
 import 'package:wafra_frontend/screens/restaurant_profile_screen.dart';
+import 'package:wafra_frontend/services/auth_service.dart';
 
 enum UserRole { restaurant, individual, foodBank }
 
@@ -14,22 +15,39 @@ class RoleSelectionScreen extends StatefulWidget {
 
 class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   UserRole? _selectedRole;
+  bool _isLoading = false;
 
-  void _navigateToProfile(BuildContext context) {
-    // TODO: send selected role to backend before navigating
-    switch (_selectedRole) {
-      case UserRole.restaurant:
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const RestaurantProfileScreen()),
-        );
-      case UserRole.individual:
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const IndividualProfileScreen()),
-        );
-      case UserRole.foodBank:
-      case null:
-        // TODO: navigate to food bank profile screen
-        break;
+  String _roleToString(UserRole role) => switch (role) {
+        UserRole.restaurant => 'restaurant',
+        UserRole.individual => 'individual',
+        UserRole.foodBank => 'foodbank',
+      };
+
+  Future<void> _submit() async {
+    if (_selectedRole == null) return;
+    setState(() => _isLoading = true);
+    try {
+      await AuthService.instance.chooseRole(_roleToString(_selectedRole!));
+      if (!mounted) return;
+      switch (_selectedRole) {
+        case UserRole.restaurant:
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const RestaurantProfileScreen()),
+          );
+        case UserRole.individual:
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const IndividualProfileScreen()),
+          );
+        case UserRole.foodBank:
+        case null:
+          break;
+      }
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message)));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -122,9 +140,8 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: _selectedRole == null
-                      ? null
-                      : () => _navigateToProfile(context),
+                  onPressed:
+                      (_selectedRole == null || _isLoading) ? null : _submit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1A5C38),
                     disabledBackgroundColor:
@@ -136,14 +153,23 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: Text(
-                    'Continue',
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 18,
-                      height: 27 / 18,
-                    ),
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          'Continue',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 18,
+                            height: 27 / 18,
+                          ),
+                        ),
                 ),
               ),
             ],
