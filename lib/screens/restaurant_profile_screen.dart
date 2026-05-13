@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wafra_frontend/screens/restaurant_dashboard_screen.dart';
+import 'package:wafra_frontend/services/auth_service.dart';
 
 class RestaurantProfileScreen extends StatefulWidget {
   const RestaurantProfileScreen({super.key});
@@ -16,6 +17,45 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> {
   final _addressController = TextEditingController();
   final _phoneController = TextEditingController();
   final _licenseController = TextEditingController();
+  bool _isLoading = false;
+
+  Future<void> _submit() async {
+    final name = _nameController.text.trim();
+    final cuisine = _cuisineController.text.trim();
+    final address = _addressController.text.trim();
+    final phone = _phoneController.text.trim();
+    final license = _licenseController.text.trim();
+
+    if (name.isEmpty || cuisine.isEmpty || address.isEmpty ||
+        phone.isEmpty || license.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in all fields.')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      await AuthService.instance.completeProfileRestaurant(
+        restaurantName: name,
+        cuisineType: cuisine,
+        fullAddress: address,
+        phone: phone,
+        businessLicenseNumber: license,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const RestaurantDashboardScreen()),
+        (route) => false,
+      );
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message)));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -163,27 +203,34 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () => Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(
-                      builder: (_) => const RestaurantDashboardScreen(),
-                    ),
-                  ),
+                  onPressed: _isLoading ? null : _submit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1A5C38),
                     foregroundColor: Colors.white,
+                    disabledBackgroundColor:
+                        const Color(0xFF1A5C38).withValues(alpha: 0.6),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: Text(
-                    'Complete Setup',
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 18,
-                      height: 27 / 18,
-                    ),
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          'Complete Setup',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 18,
+                            height: 27 / 18,
+                          ),
+                        ),
                 ),
               ),
             ),
