@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:wafra_frontend/screens/explore_screen.dart';
 
 class IndividualProfileScreen extends StatefulWidget {
   const IndividualProfileScreen({super.key});
@@ -221,9 +222,9 @@ class _IndividualProfileScreenState extends State<IndividualProfileScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // TODO: submit profile to backend
-                  },
+                  onPressed: () => Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (_) => const ExploreScreen()),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1A5C38),
                     foregroundColor: Colors.white,
