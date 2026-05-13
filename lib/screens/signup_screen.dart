@@ -11,12 +11,14 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
+  final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
   @override
   void dispose() {
+    _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -84,6 +86,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 },
               ),
               const SizedBox(height: 32),
+
+              _InputField(
+                controller: _usernameController,
+                hint: 'username',
+                keyboardType: TextInputType.text,
+              ),
+              const SizedBox(height: 24),
 
               _InputField(
                 controller: _emailController,
