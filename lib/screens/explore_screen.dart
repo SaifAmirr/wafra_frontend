@@ -2,60 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wafra_frontend/models/food_listing.dart';
 import 'package:wafra_frontend/screens/food_listing_detail_screen.dart';
-
-const _listings = [
-  FoodListing(
-    title: 'Assorted Pastries Box',
-    restaurant: 'Artisan Bakery',
-    distance: 0.4,
-    originalPrice: 21.00,
-    discountedPrice: 6.50,
-    itemsLeft: 8,
-    expiresIn: '15:00',
-    imageBg: Color(0xFFFEF3C7),
-    imageIconColor: Color(0xFFD97706),
-    imageIcon: Icons.bakery_dining,
-    category: 'Bakery',
-    description:
-        'A hand-picked selection of our daily surplus artisan pastries. Typically includes 2–3 croissants, a fruit danish, and sourdough muffins. Perfect for breakfast or an afternoon treat. All items are baked fresh this morning.',
-    tags: ['Vegetarian', 'Contains Nuts'],
-    restaurantRating: 4.8,
-  ),
-  FoodListing(
-    title: 'Fresh Garden Salad',
-    restaurant: 'Green Cafe',
-    distance: 0.7,
-    originalPrice: 14.50,
-    discountedPrice: 4.00,
-    itemsLeft: 3,
-    expiresIn: '08:30',
-    imageBg: Color(0xFFDCFCE7),
-    imageIconColor: Color(0xFF16A34A),
-    imageIcon: Icons.eco,
-    category: 'Vegetarian',
-    description:
-        'A generous portion of freshly prepared garden salad with seasonal vegetables, cherry tomatoes, cucumber, and house vinaigrette. Made this morning and perfect for a light lunch.',
-    tags: ['Vegetarian', 'Vegan', 'Gluten-Free'],
-    restaurantRating: 4.5,
-  ),
-  FoodListing(
-    title: 'Daily Surplus Meals',
-    restaurant: 'City Food Hub',
-    distance: 1.2,
-    originalPrice: 18.00,
-    discountedPrice: 0.00,
-    itemsLeft: 12,
-    expiresIn: '45:00',
-    imageBg: Color(0xFFFFF7ED),
-    imageIconColor: Color(0xFFEA580C),
-    imageIcon: Icons.restaurant,
-    category: 'Meals',
-    description:
-        'Mixed surplus meals from today\'s service. Contents vary daily but always include a main dish, a side, and bread. Great value for individuals and families looking to reduce food waste.',
-    tags: ['Contains Gluten', 'May contain dairy'],
-    restaurantRating: 4.2,
-  ),
-];
+import 'package:wafra_frontend/services/api_service.dart';
 
 const _categories = ['All', 'Vegetarian', 'Bakery', 'Meals'];
 
@@ -180,6 +127,28 @@ class _ExploreTab extends StatefulWidget {
 class _ExploreTabState extends State<_ExploreTab> {
   int _selectedCategory = 0;
   bool _listView = true;
+  List<FoodListing> _listings = [];
+  bool _loadingListings = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadListings();
+  }
+
+  Future<void> _loadListings() async {
+    setState(() => _loadingListings = true);
+    try {
+      final category = _selectedCategory == 0 ? null : _categories[_selectedCategory];
+      final raw = await ApiService.instance.getListings(category: category);
+      if (!mounted) return;
+      setState(() => _listings = raw.map((j) => FoodListing.fromJson(j as Map<String, dynamic>)).toList());
+    } catch (_) {
+      // keep list empty on error
+    } finally {
+      if (mounted) setState(() => _loadingListings = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -276,8 +245,10 @@ class _ExploreTabState extends State<_ExploreTab> {
                             right: i < _categories.length - 1 ? 8 : 0,
                           ),
                           child: GestureDetector(
-                            onTap: () =>
-                                setState(() => _selectedCategory = i),
+                            onTap: () {
+                              setState(() => _selectedCategory = i);
+                              _loadListings();
+                            },
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 200),
                               padding: const EdgeInsets.symmetric(
@@ -380,27 +351,41 @@ class _ExploreTabState extends State<_ExploreTab> {
           ),
 
           // Listing cards
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, i) => Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: GestureDetector(
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => FoodListingDetailScreen(
-                          listing: _listings[i],
+          if (_loadingListings)
+            const SliverFillRemaining(
+              child: Center(child: CircularProgressIndicator(color: Color(0xFF1A5C38))),
+            )
+          else if (_listings.isEmpty)
+            SliverFillRemaining(
+              child: Center(
+                child: Text(
+                  'No listings found.',
+                  style: GoogleFonts.inter(fontSize: 15, color: Color(0xFF94A3B8)),
+                ),
+              ),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, i) => Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: GestureDetector(
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => FoodListingDetailScreen(
+                            listing: _listings[i],
+                          ),
                         ),
                       ),
+                      child: _FoodCard(listing: _listings[i]),
                     ),
-                    child: _FoodCard(listing: _listings[i]),
                   ),
+                  childCount: _listings.length,
                 ),
-                childCount: _listings.length,
               ),
             ),
-          ),
         ],
       ),
     );

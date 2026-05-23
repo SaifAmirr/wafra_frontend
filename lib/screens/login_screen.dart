@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:wafra_frontend/screens/explore_screen.dart';
+import 'package:wafra_frontend/screens/restaurant_dashboard_screen.dart';
 import 'package:wafra_frontend/screens/signup_screen.dart';
+import 'package:wafra_frontend/services/api_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,12 +16,52 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _loading = false;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _login() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    if (email.isEmpty || password.isEmpty) {
+      _showError('Please enter your email and password.');
+      return;
+    }
+    setState(() => _loading = true);
+    try {
+      await ApiService.instance.login(email, password);
+      final me = await ApiService.instance.getMe();
+      final role = (me['user'] as Map<String, dynamic>?)?['role'] as String?;
+      if (!mounted) return;
+      if (role == 'restaurant') {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const RestaurantDashboardScreen()),
+          (r) => false,
+        );
+      } else {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const ExploreScreen()),
+          (r) => false,
+        );
+      }
+    } on ApiException catch (e) {
+      _showError(e.message);
+    } catch (_) {
+      _showError('Could not connect to server.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: Colors.red.shade700),
+    );
   }
 
   @override
@@ -132,7 +175,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: _loading ? null : _login,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1A5C38),
                     foregroundColor: Colors.white,
@@ -141,14 +184,23 @@ class _LoginScreenState extends State<LoginScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: Text(
-                    'Log In',
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 18,
-                      height: 27 / 18,
-                    ),
-                  ),
+                  child: _loading
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          'Log In',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 18,
+                            height: 27 / 18,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 4),
