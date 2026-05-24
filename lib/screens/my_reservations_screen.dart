@@ -3,7 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:wafra_frontend/services/api_service.dart';
 
 class MyReservationsScreen extends StatefulWidget {
-  const MyReservationsScreen({super.key});
+  final VoidCallback? onGoExplore;
+  const MyReservationsScreen({super.key, this.onGoExplore});
 
   @override
   State<MyReservationsScreen> createState() => _MyReservationsScreenState();
@@ -68,7 +69,6 @@ class _MyReservationsScreenState extends State<MyReservationsScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _TopBar(onBack: () => Navigator.of(context).pop()),
             const SizedBox(height: 20),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -95,7 +95,7 @@ class _MyReservationsScreenState extends State<MyReservationsScreen>
                         if (items.isEmpty) {
                           return _EmptyState(
                             tabLabel: tab,
-                            onBrowse: () => Navigator.of(context).pop(),
+                            onBrowse: widget.onGoExplore ?? () {},
                           );
                         }
                         return ListView.separated(
@@ -114,55 +114,6 @@ class _MyReservationsScreenState extends State<MyReservationsScreen>
   }
 }
 
-// ─── Top bar ─────────────────────────────────────────────────────────────────
-
-class _TopBar extends StatelessWidget {
-  final VoidCallback onBack;
-  const _TopBar({required this.onBack});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left, size: 28, color: Color(0xFF0F172A)),
-            onPressed: onBack,
-          ),
-          const Spacer(),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 22,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2563EB),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-              const SizedBox(width: 5),
-              Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFCBD5E1),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-            ],
-          ),
-          const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.code, size: 22, color: Color(0xFF0F172A)),
-            onPressed: () {},
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 // ─── Tab bar ─────────────────────────────────────────────────────────────────
 

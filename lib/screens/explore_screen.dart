@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wafra_frontend/models/food_listing.dart';
 import 'package:wafra_frontend/screens/food_listing_detail_screen.dart';
+import 'package:wafra_frontend/screens/my_reservations_screen.dart';
+import 'package:wafra_frontend/screens/profile_screen.dart';
 import 'package:wafra_frontend/services/api_service.dart';
 
 const _categories = ['All', 'Vegetarian', 'Bakery', 'Meals'];
@@ -26,9 +28,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
         index: _tab,
         children: [
           const _ExploreTab(),
-          _emptyTab('Reservations'),
-          _emptyTab('Messages'),
-          _emptyTab('Profile'),
+          MyReservationsScreen(onGoExplore: () => setState(() => _tab = 0)),
+          const ProfileScreen(),
         ],
       ),
       bottomNavigationBar: _BottomNav(
@@ -37,13 +38,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
       ),
     );
   }
-
-  Widget _emptyTab(String label) => Center(
-        child: Text(
-          label,
-          style: GoogleFonts.inter(fontSize: 16, color: const Color(0xFF94A3B8)),
-        ),
-      );
 }
 
 // ─── Bottom navigation bar ────────────────────────────────────────────────────
@@ -82,29 +76,18 @@ class _BottomNav extends StatelessWidget {
         surfaceTintColor: Colors.transparent,
         shadowColor: const Color(0x1A000000),
         elevation: 8,
-        destinations: [
-          const NavigationDestination(
+        destinations: const [
+          NavigationDestination(
             icon: Icon(Icons.explore_outlined),
             selectedIcon: Icon(Icons.explore),
             label: 'Explore',
           ),
-          const NavigationDestination(
+          NavigationDestination(
             icon: Icon(Icons.bookmark_border),
             selectedIcon: Icon(Icons.bookmark),
             label: 'Reservations',
           ),
           NavigationDestination(
-            icon: Badge(
-              label: Text('2', style: GoogleFonts.inter(fontSize: 10)),
-              child: const Icon(Icons.chat_bubble_outline),
-            ),
-            selectedIcon: Badge(
-              label: Text('2', style: GoogleFonts.inter(fontSize: 10)),
-              child: const Icon(Icons.chat_bubble),
-            ),
-            label: 'Messages',
-          ),
-          const NavigationDestination(
             icon: Icon(Icons.person_outline),
             selectedIcon: Icon(Icons.person),
             label: 'Profile',

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:wafra_frontend/screens/manage_requests_screen.dart';
 import 'package:wafra_frontend/screens/post_surplus_food_screen.dart';
+import 'package:wafra_frontend/screens/profile_screen.dart';
 import 'package:wafra_frontend/services/api_service.dart';
 
 // ─── Data model ───────────────────────────────────────────────────────────────
@@ -84,58 +86,46 @@ class RestaurantDashboardScreen extends StatefulWidget {
 
 class _RestaurantDashboardScreenState
     extends State<RestaurantDashboardScreen> {
-  int _tab = 0;
+  // Nav indices: 0=Home, 1=Post(action), 2=Requests, 3=Profile
+  // Stack indices: 0=Home, 1=Requests, 2=Profile
+  int _navIndex = 0;
+
+  int get _stackIndex => switch (_navIndex) {
+        2 => 1,
+        3 => 2,
+        _ => 0,
+      };
+
+  void _onNavTap(int i) {
+    if (i == 1) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const PostSurplusFoodScreen()),
+      );
+      return;
+    }
+    setState(() => _navIndex = i);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF8FAFC),
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        title: Text(
-          'Restaurant Dashboard',
-          style: GoogleFonts.inter(
-            fontWeight: FontWeight.w700,
-            fontSize: 18,
-            color: const Color(0xFF0D9488),
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.code, color: Color(0xFF0F172A), size: 22),
-            onPressed: () {},
-          ),
-        ],
-      ),
       body: IndexedStack(
-        index: _tab,
-        children: [
-          const _HomeTab(),
-          _empty('Orders'),
-          _empty('Messages'),
-          _empty('Profile'),
+        index: _stackIndex,
+        children: const [
+          _HomeTab(),
+          ManageRequestsScreen(),
+          ProfileScreen(),
         ],
       ),
-      floatingActionButton: _PostSurplusFab(),
+      floatingActionButton: _navIndex == 0 ? _PostSurplusFab() : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       bottomNavigationBar: _BottomNav(
-        currentIndex: _tab,
-        onTap: (i) => setState(() => _tab = i),
+        currentIndex: _navIndex,
+        onTap: _onNavTap,
       ),
     );
   }
-
-  Widget _empty(String label) => Center(
-        child: Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 16,
-            color: const Color(0xFF94A3B8),
-          ),
-        ),
-      );
 }
 
 // ─── Post Surplus Food FAB ────────────────────────────────────────────────────
@@ -203,29 +193,23 @@ class _BottomNav extends StatelessWidget {
         surfaceTintColor: Colors.transparent,
         shadowColor: const Color(0x1A000000),
         elevation: 8,
-        destinations: [
-          const NavigationDestination(
+        destinations: const [
+          NavigationDestination(
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home),
             label: 'Home',
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long),
-            label: 'Orders',
+          NavigationDestination(
+            icon: Icon(Icons.add_circle_outline),
+            selectedIcon: Icon(Icons.add_circle),
+            label: 'Post',
           ),
           NavigationDestination(
-            icon: Badge(
-              label: Text('2', style: GoogleFonts.inter(fontSize: 10)),
-              child: const Icon(Icons.chat_bubble_outline),
-            ),
-            selectedIcon: Badge(
-              label: Text('2', style: GoogleFonts.inter(fontSize: 10)),
-              child: const Icon(Icons.chat_bubble),
-            ),
-            label: 'Messages',
+            icon: Icon(Icons.inbox_outlined),
+            selectedIcon: Icon(Icons.inbox),
+            label: 'Requests',
           ),
-          const NavigationDestination(
+          NavigationDestination(
             icon: Icon(Icons.person_outline),
             selectedIcon: Icon(Icons.person),
             label: 'Profile',

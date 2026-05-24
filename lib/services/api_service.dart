@@ -66,6 +66,47 @@ class ApiService {
     return _handle(res);
   }
 
+  Future<Map<String, dynamic>> completeIndividualProfile({
+    String? firstName,
+    String? lastName,
+    String? phone,
+    String? birthdate,
+  }) async {
+    final res = await http.post(
+      Uri.parse('$_base/auth/complete-profile'),
+      headers: _authHeaders,
+      body: jsonEncode(<String, dynamic>{
+        if (firstName != null && firstName.isNotEmpty) 'first_name': firstName,
+        if (lastName != null && lastName.isNotEmpty) 'last_name': lastName,
+        if (phone != null && phone.isNotEmpty) 'phone': phone,
+        if (birthdate != null) 'birthdate': birthdate,
+      }),
+    );
+    _extractToken(res);
+    return _handle(res);
+  }
+
+  Future<Map<String, dynamic>> completeFoodBankProfile({
+    required String organizationName,
+    String? registrationNumber,
+    String? phone,
+    String? location,
+  }) async {
+    final res = await http.post(
+      Uri.parse('$_base/auth/complete-profile'),
+      headers: _authHeaders,
+      body: jsonEncode(<String, dynamic>{
+        'organization_name': organizationName,
+        if (registrationNumber != null && registrationNumber.isNotEmpty)
+          'registration_number': registrationNumber,
+        if (phone != null && phone.isNotEmpty) 'phone': phone,
+        if (location != null && location.isNotEmpty) 'location': location,
+      }),
+    );
+    _extractToken(res);
+    return _handle(res);
+  }
+
   Future<Map<String, dynamic>> completeRestaurantProfile({
     required String restaurantName,
     String? cuisineType,
@@ -228,6 +269,58 @@ class ApiService {
       body: jsonEncode({'code': code}),
     );
     return _handle(res);
+  }
+
+  // ── Admin ──────────────────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> getAdminStats() async {
+    final res = await http.get(
+      Uri.parse('$_base/admin/stats'),
+      headers: _authHeaders,
+    );
+    return _handle(res);
+  }
+
+  Future<List<dynamic>> getAdminUsers() async {
+    final res = await http.get(
+      Uri.parse('$_base/admin/users'),
+      headers: _authHeaders,
+    );
+    final body = await _handle(res);
+    return body['users'] as List<dynamic>;
+  }
+
+  Future<List<dynamic>> getAdminListings() async {
+    final res = await http.get(
+      Uri.parse('$_base/admin/listings'),
+      headers: _authHeaders,
+    );
+    final body = await _handle(res);
+    return body['listings'] as List<dynamic>;
+  }
+
+  Future<void> adminApproveUser(int userId) async {
+    final res = await http.patch(
+      Uri.parse('$_base/admin/users/$userId/approve'),
+      headers: _authHeaders,
+    );
+    _handle(res);
+  }
+
+  Future<void> adminRejectUser(int userId) async {
+    final res = await http.patch(
+      Uri.parse('$_base/admin/users/$userId/reject'),
+      headers: _authHeaders,
+    );
+    _handle(res);
+  }
+
+  Future<void> adminDeleteListing(int listingId) async {
+    final res = await http.delete(
+      Uri.parse('$_base/admin/listings/$listingId'),
+      headers: _authHeaders,
+    );
+    _handle(res);
   }
 }
 

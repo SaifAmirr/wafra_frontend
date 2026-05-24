@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:wafra_frontend/screens/restaurant_dashboard_screen.dart';
+import 'package:wafra_frontend/screens/pending_verification_screen.dart';
 import 'package:wafra_frontend/services/api_service.dart';
 
 class RestaurantProfileScreen extends StatefulWidget {
@@ -50,8 +50,9 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> {
         businessLicenseNumber: _licenseController.text.trim(),
       );
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const RestaurantDashboardScreen()),
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const PendingVerificationScreen(role: 'restaurant')),
+        (r) => false,
       );
     } on ApiException catch (e) {
       if (mounted) {

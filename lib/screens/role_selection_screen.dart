@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:wafra_frontend/screens/food_bank_profile_screen.dart';
 import 'package:wafra_frontend/screens/individual_profile_screen.dart';
 import 'package:wafra_frontend/screens/restaurant_profile_screen.dart';
 import 'package:wafra_frontend/services/api_service.dart';
@@ -39,10 +40,10 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
             MaterialPageRoute(builder: (_) => const IndividualProfileScreen()),
           );
         case UserRole.foodBank:
-        case null:
           Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const IndividualProfileScreen()),
+            MaterialPageRoute(builder: (_) => const FoodBankProfileScreen()),
           );
+        case null:
       }
     } on ApiException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

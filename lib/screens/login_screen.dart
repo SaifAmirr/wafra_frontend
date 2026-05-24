@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:wafra_frontend/screens/admin_dashboard_screen.dart';
 import 'package:wafra_frontend/screens/explore_screen.dart';
+import 'package:wafra_frontend/screens/food_bank_dashboard_screen.dart';
+import 'package:wafra_frontend/screens/pending_verification_screen.dart';
 import 'package:wafra_frontend/screens/restaurant_dashboard_screen.dart';
 import 'package:wafra_frontend/screens/signup_screen.dart';
 import 'package:wafra_frontend/services/api_service.dart';
@@ -36,11 +39,31 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       await ApiService.instance.login(email, password);
       final me = await ApiService.instance.getMe();
-      final role = (me['user'] as Map<String, dynamic>?)?['role'] as String?;
+      final user = me['user'] as Map<String, dynamic>?;
+      final role = user?['role'] as String?;
+      final status = user?['verification_status'] as String?;
       if (!mounted) return;
-      if (role == 'restaurant') {
+      if (status == 'pending') {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+              builder: (_) => PendingVerificationScreen(role: role ?? '')),
+          (r) => false,
+        );
+        return;
+      }
+      if (role == 'admin') {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
+          (r) => false,
+        );
+      } else if (role == 'restaurant') {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const RestaurantDashboardScreen()),
+          (r) => false,
+        );
+      } else if (role == 'foodbank') {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const FoodBankDashboardScreen()),
           (r) => false,
         );
       } else {
