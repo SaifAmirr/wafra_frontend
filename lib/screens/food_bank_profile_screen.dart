@@ -1,79 +1,78 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:wafra_frontend/screens/explore_screen.dart';
+import 'package:wafra_frontend/screens/pending_verification_screen.dart';
 import 'package:wafra_frontend/services/api_service.dart';
 
-class IndividualProfileScreen extends StatefulWidget {
-  const IndividualProfileScreen({super.key});
+class FoodBankProfileScreen extends StatefulWidget {
+  const FoodBankProfileScreen({super.key});
 
   @override
-  State<IndividualProfileScreen> createState() =>
-      _IndividualProfileScreenState();
+  State<FoodBankProfileScreen> createState() => _FoodBankProfileScreenState();
 }
 
-class _IndividualProfileScreenState extends State<IndividualProfileScreen> {
-  final _firstNameController = TextEditingController();
-  final _lastNameController = TextEditingController();
+class _FoodBankProfileScreenState extends State<FoodBankProfileScreen> {
+  final _orgNameController = TextEditingController();
+  final _regNumberController = TextEditingController();
+  final _contactController = TextEditingController();
   final _phoneController = TextEditingController();
-  DateTime? _birthdate;
+  final _locationController = TextEditingController();
   bool _loading = false;
 
   @override
   void dispose() {
-    _firstNameController.dispose();
-    _lastNameController.dispose();
+    _orgNameController.dispose();
+    _regNumberController.dispose();
+    _contactController.dispose();
     _phoneController.dispose();
+    _locationController.dispose();
     super.dispose();
   }
 
-  Future<void> _pickBirthdate() async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime(now.year - 18, now.month, now.day),
-      firstDate: DateTime(1920),
-      lastDate: DateTime(now.year - 13, now.month, now.day),
-      builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(
-          colorScheme: const ColorScheme.light(
-            primary: Color(0xFF1A5C38),
-            onPrimary: Colors.white,
-            surface: Colors.white,
-          ),
-        ),
-        child: child!,
-      ),
-    );
-    if (picked != null) setState(() => _birthdate = picked);
-  }
-
   Future<void> _submit() async {
+    final orgName = _orgNameController.text.trim();
+    if (orgName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please enter your organisation name.'),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+      return;
+    }
     setState(() => _loading = true);
     try {
-      await ApiService.instance.completeIndividualProfile(
-        firstName: _firstNameController.text.trim(),
-        lastName: _lastNameController.text.trim(),
+      await ApiService.instance.completeFoodBankProfile(
+        organizationName: orgName,
+        registrationNumber: _regNumberController.text.trim(),
         phone: _phoneController.text.trim(),
-        birthdate: _birthdate != null
-            ? '${_birthdate!.year}-${_birthdate!.month.toString().padLeft(2, '0')}-${_birthdate!.day.toString().padLeft(2, '0')}'
-            : null,
+        location: _locationController.text.trim(),
       );
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+            builder: (_) => const PendingVerificationScreen(role: 'foodbank')),
+        (r) => false,
+      );
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(e.message),
+              backgroundColor: Colors.red.shade700),
+        );
+      }
     } catch (_) {
-      // Profile save is best-effort; user is already authenticated so proceed.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not connect to server.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
-    if (!mounted) return;
-    setState(() => _loading = false);
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const ExploreScreen()),
-      (r) => false,
-    );
-  }
-
-  String get _birthdateDisplay {
-    if (_birthdate == null) return 'DD / MM / YYYY';
-    return '${_birthdate!.day.toString().padLeft(2, '0')} / '
-        '${_birthdate!.month.toString().padLeft(2, '0')} / '
-        '${_birthdate!.year}';
   }
 
   @override
@@ -94,18 +93,13 @@ class _IndividualProfileScreenState extends State<IndividualProfileScreen> {
                       children: [
                         GestureDetector(
                           onTap: () => Navigator.of(context).pop(),
-                          child: const Icon(
-                            Icons.arrow_back_ios,
-                            size: 20,
-                            color: Color(0xFF0F172A),
-                          ),
+                          child: const Icon(Icons.arrow_back_ios,
+                              size: 20, color: Color(0xFF0F172A)),
                         ),
                         const Expanded(
                           child: Center(
                             child: _ProgressDots(
-                              currentStep: 1,
-                              totalSteps: 3,
-                            ),
+                                currentStep: 1, totalSteps: 3),
                           ),
                         ),
                         const SizedBox(width: 20),
@@ -116,19 +110,16 @@ class _IndividualProfileScreenState extends State<IndividualProfileScreen> {
                     // Role tag
                     Row(
                       children: [
-                        const Icon(
-                          Icons.person_outline,
-                          size: 14,
-                          color: Color(0xFF1A5C38),
-                        ),
+                        const Icon(Icons.account_balance_outlined,
+                            size: 14, color: Color(0xFF7C3AED)),
                         const SizedBox(width: 6),
                         Text(
-                          'INDIVIDUAL ROLE',
+                          'FOOD BANK ROLE',
                           style: GoogleFonts.inter(
                             fontWeight: FontWeight.w700,
                             fontSize: 11,
                             letterSpacing: 11 * 0.05,
-                            color: const Color(0xFF1A5C38),
+                            color: const Color(0xFF7C3AED),
                           ),
                         ),
                       ],
@@ -136,7 +127,7 @@ class _IndividualProfileScreenState extends State<IndividualProfileScreen> {
                     const SizedBox(height: 10),
 
                     Text(
-                      'Complete Profile',
+                      'Organisation Details',
                       style: GoogleFonts.inter(
                         fontWeight: FontWeight.w700,
                         fontSize: 28,
@@ -147,7 +138,7 @@ class _IndividualProfileScreenState extends State<IndividualProfileScreen> {
                     const SizedBox(height: 8),
 
                     Text(
-                      'Just a few more details to get started.',
+                      'Complete your profile to start collecting surplus food for your community.',
                       style: GoogleFonts.inter(
                         fontWeight: FontWeight.w400,
                         fontSize: 14,
@@ -158,18 +149,25 @@ class _IndividualProfileScreenState extends State<IndividualProfileScreen> {
                     const SizedBox(height: 28),
 
                     _FormField(
-                      label: 'First Name',
-                      controller: _firstNameController,
-                      hint: 'e.g. John',
-                      icon: Icons.person_outline,
-                      keyboardType: TextInputType.name,
+                      label: 'Organisation Name',
+                      controller: _orgNameController,
+                      hint: 'e.g. Cairo Food Bank',
+                      icon: Icons.account_balance_outlined,
                     ),
                     const SizedBox(height: 20),
 
                     _FormField(
-                      label: 'Last Name',
-                      controller: _lastNameController,
-                      hint: 'e.g. Doe',
+                      label: 'Official Registration Number',
+                      controller: _regNumberController,
+                      hint: 'NGO-123456',
+                      icon: Icons.badge_outlined,
+                    ),
+                    const SizedBox(height: 20),
+
+                    _FormField(
+                      label: 'Contact Person Name',
+                      controller: _contactController,
+                      hint: 'Full name of coordinator',
                       icon: Icons.person_outline,
                       keyboardType: TextInputType.name,
                     ),
@@ -178,68 +176,54 @@ class _IndividualProfileScreenState extends State<IndividualProfileScreen> {
                     _FormField(
                       label: 'Phone Number',
                       controller: _phoneController,
-                      hint: '+1 (555) 000-0000',
+                      hint: '+20 10 0000 0000',
                       icon: Icons.phone_outlined,
                       keyboardType: TextInputType.phone,
                     ),
                     const SizedBox(height: 20),
 
-                    // Birthdate — read-only tap-to-pick field
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Birthdate',
-                          style: GoogleFonts.inter(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                            color: const Color(0xFF0F172A),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        GestureDetector(
-                          onTap: _pickBirthdate,
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 16,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFFE2E8F0)),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.calendar_today_outlined,
-                                  size: 18,
-                                  color: Color(0xFF94A3B8),
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  _birthdateDisplay,
-                                  style: GoogleFonts.inter(
-                                    fontWeight: FontWeight.w400,
-                                    fontSize: 15,
-                                    color: _birthdate == null
-                                        ? const Color(0xFFCBD5E1)
-                                        : const Color(0xFF0F172A),
-                                  ),
-                                ),
-                              ],
+                    _FormField(
+                      label: 'Service Area / Location',
+                      controller: _locationController,
+                      hint: 'e.g. Maadi, Cairo',
+                      icon: Icons.location_on_outlined,
+                      keyboardType: TextInputType.streetAddress,
+                    ),
+
+                    // Info note
+                    const SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF3E8FF),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.info_outline,
+                              size: 18, color: Color(0xFF7C3AED)),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'We verify food banks to protect our community — review takes up to 48 hours.',
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.w400,
+                                fontSize: 13,
+                                height: 1.5,
+                                color: const Color(0xFF6D28D9),
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
 
-            // Fixed bottom button
+            // Fixed button
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
               child: SizedBox(
@@ -248,32 +232,23 @@ class _IndividualProfileScreenState extends State<IndividualProfileScreen> {
                 child: ElevatedButton(
                   onPressed: _loading ? null : _submit,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1A5C38),
-                    disabledBackgroundColor:
-                        const Color(0xFF1A5C38).withValues(alpha: 0.4),
+                    backgroundColor: const Color(0xFF7C3AED),
                     foregroundColor: Colors.white,
-                    disabledForegroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                   child: _loading
                       ? const SizedBox(
                           width: 22,
                           height: 22,
                           child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Colors.white,
-                          ),
+                              strokeWidth: 2.5, color: Colors.white),
                         )
                       : Text(
                           'Complete Setup',
                           style: GoogleFonts.inter(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 18,
-                            height: 27 / 18,
-                          ),
+                              fontWeight: FontWeight.w700, fontSize: 18),
                         ),
                 ),
               ),
@@ -285,7 +260,7 @@ class _IndividualProfileScreenState extends State<IndividualProfileScreen> {
   }
 }
 
-// ─── Form field with label + leading icon ─────────────────────────────────────
+// ─── Reusable form field ──────────────────────────────────────────────────────
 
 class _FormField extends StatelessWidget {
   final String label;
@@ -331,13 +306,12 @@ class _FormField extends StatelessWidget {
               fontSize: 15,
               color: const Color(0xFFCBD5E1),
             ),
-            prefixIcon: Icon(icon, size: 18, color: const Color(0xFF94A3B8)),
+            prefixIcon:
+                Icon(icon, size: 18, color: const Color(0xFF94A3B8)),
             filled: true,
             fillColor: Colors.white,
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
+                horizontal: 16, vertical: 16),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
@@ -349,7 +323,7 @@ class _FormField extends StatelessWidget {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide:
-                  const BorderSide(color: Color(0xFF1A5C38), width: 1.5),
+                  const BorderSide(color: Color(0xFF7C3AED), width: 1.5),
             ),
           ),
         ),
@@ -363,8 +337,8 @@ class _FormField extends StatelessWidget {
 class _ProgressDots extends StatelessWidget {
   final int currentStep;
   final int totalSteps;
-
-  const _ProgressDots({required this.currentStep, required this.totalSteps});
+  const _ProgressDots(
+      {required this.currentStep, required this.totalSteps});
 
   @override
   Widget build(BuildContext context) {
@@ -380,7 +354,7 @@ class _ProgressDots extends StatelessWidget {
             height: 8,
             decoration: BoxDecoration(
               color: isActive
-                  ? const Color(0xFF1A5C38)
+                  ? const Color(0xFF7C3AED)
                   : const Color(0xFFD9D9D9),
               borderRadius: BorderRadius.circular(4),
             ),

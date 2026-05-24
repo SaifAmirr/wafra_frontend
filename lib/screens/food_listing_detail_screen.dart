@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wafra_frontend/models/food_listing.dart';
+import 'package:wafra_frontend/services/api_service.dart';
 
 class FoodListingDetailScreen extends StatefulWidget {
   final FoodListing listing;
@@ -14,6 +15,39 @@ class FoodListingDetailScreen extends StatefulWidget {
 
 class _FoodListingDetailScreenState extends State<FoodListingDetailScreen> {
   bool _bookmarked = false;
+  bool _reserving = false;
+
+  Future<void> _reserve() async {
+    final id = widget.listing.listingId;
+    if (id == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Listing ID unavailable.')),
+      );
+      return;
+    }
+    setState(() => _reserving = true);
+    try {
+      await ApiService.instance.createReservation(id, 1);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Reservation made! Check My Reservations.'),
+          backgroundColor: Color(0xFF1A5C38),
+        ),
+      );
+      Navigator.of(context).pop();
+    } on ApiException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message), backgroundColor: Colors.red.shade700),
+      );
+    } catch (_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not connect to server.'), backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) setState(() => _reserving = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -346,7 +380,7 @@ class _FoodListingDetailScreenState extends State<FoodListingDetailScreen> {
                   const SizedBox(width: 16),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: _reserving ? null : _reserve,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF1A5C38),
                         foregroundColor: Colors.white,
@@ -356,20 +390,29 @@ class _FoodListingDetailScreenState extends State<FoodListingDetailScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Reserve Now',
-                            style: GoogleFonts.inter(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 16,
+                      child: _reserving
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Reserve Now',
+                                  style: GoogleFonts.inter(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                const Icon(Icons.arrow_forward, size: 18),
+                              ],
                             ),
-                          ),
-                          const SizedBox(width: 6),
-                          const Icon(Icons.arrow_forward, size: 18),
-                        ],
-                      ),
                     ),
                   ),
                 ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wafra_frontend/screens/login_screen.dart';
 import 'package:wafra_frontend/screens/role_selection_screen.dart';
+import 'package:wafra_frontend/services/api_service.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -15,6 +16,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _loading = false;
 
   @override
   void dispose() {
@@ -22,6 +24,43 @@ class _SignUpScreenState extends State<SignUpScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _register() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    if (email.isEmpty || password.isEmpty) {
+      _showError('Please enter your email and password.');
+      return;
+    }
+    setState(() => _loading = true);
+    try {
+      final username = _usernameController.text.trim();
+      if (username.isEmpty) {
+        _showError('Please enter a username.');
+        setState(() => _loading = false);
+        return;
+      }
+      await ApiService.instance.register(email, password, username);
+      // Register doesn't return a token — login immediately to get one
+      await ApiService.instance.login(email, password);
+      if (!mounted) return;
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
+      );
+    } on ApiException catch (e) {
+      _showError(e.message);
+    } catch (_) {
+      _showError('Could not connect to server.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: Colors.red.shade700),
+    );
   }
 
   @override
@@ -123,11 +162,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const RoleSelectionScreen(),
-                    ),
-                  ),
+                  onPressed: _loading ? null : _register,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1A5C38),
                     foregroundColor: Colors.white,
@@ -136,14 +171,23 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: Text(
-                    'Continue',
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 18,
-                      height: 27 / 18,
-                    ),
-                  ),
+                  child: _loading
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          'Continue',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 18,
+                            height: 27 / 18,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 4),

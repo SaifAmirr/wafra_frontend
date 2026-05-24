@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:wafra_frontend/screens/restaurant_dashboard_screen.dart';
+import 'package:wafra_frontend/screens/pending_verification_screen.dart';
+import 'package:wafra_frontend/services/api_service.dart';
 
 class RestaurantProfileScreen extends StatefulWidget {
   const RestaurantProfileScreen({super.key});
@@ -16,6 +17,7 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> {
   final _addressController = TextEditingController();
   final _phoneController = TextEditingController();
   final _licenseController = TextEditingController();
+  bool _loading = false;
 
   @override
   void dispose() {
@@ -25,6 +27,54 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> {
     _phoneController.dispose();
     _licenseController.dispose();
     super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please enter your restaurant name.'),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+      return;
+    }
+    setState(() => _loading = true);
+    try {
+      await ApiService.instance.completeRestaurantProfile(
+        restaurantName: name,
+        cuisineType: _cuisineController.text.trim(),
+        fullAddress: _addressController.text.trim(),
+        phone: _phoneController.text.trim(),
+        businessLicenseNumber: _licenseController.text.trim(),
+      );
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const PendingVerificationScreen(role: 'restaurant')),
+        (r) => false,
+      );
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Could not connect to server.'),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
@@ -163,11 +213,7 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () => Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(
-                      builder: (_) => const RestaurantDashboardScreen(),
-                    ),
-                  ),
+                  onPressed: _loading ? null : _submit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1A5C38),
                     foregroundColor: Colors.white,
@@ -176,14 +222,23 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: Text(
-                    'Complete Setup',
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 18,
-                      height: 27 / 18,
-                    ),
-                  ),
+                  child: _loading
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          'Complete Setup',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 18,
+                            height: 27 / 18,
+                          ),
+                        ),
                 ),
               ),
             ),

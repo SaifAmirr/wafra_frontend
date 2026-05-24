@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:wafra_frontend/screens/manage_requests_screen.dart';
 import 'package:wafra_frontend/screens/post_surplus_food_screen.dart';
+import 'package:wafra_frontend/screens/profile_screen.dart';
+import 'package:wafra_frontend/services/api_service.dart';
 
 // ─── Data model ───────────────────────────────────────────────────────────────
 
@@ -24,24 +27,52 @@ class _Listing {
   });
 }
 
-const _dummyListings = [
-  _Listing(
-    name: 'Garden Salads',
-    quantity: 8,
-    status: _ListingStatus.active,
-    timeDetail: 'Expires in 2 hours',
-    listedAgo: '15m ago',
-    reservationCount: 3,
-  ),
-  _Listing(
-    name: 'Mixed Bakery Box',
-    quantity: 5,
-    status: _ListingStatus.pending,
-    timeDetail: 'Driver arriving soon',
-    listedAgo: '2h ago',
-    reservationCount: 1,
-  ),
-];
+_Listing _listingFromJson(Map<String, dynamic> j) {
+  final status = (j['status'] as String?) == 'active'
+      ? _ListingStatus.active
+      : _ListingStatus.pending;
+
+  String timeDetail = '';
+  final rawTime = j['pickup_time'] as String?;
+  if (rawTime != null) {
+    try {
+      final dt = DateTime.parse(rawTime);
+      final diff = dt.difference(DateTime.now());
+      if (status == _ListingStatus.active) {
+        timeDetail = diff.isNegative
+            ? 'Pickup time passed'
+            : 'Expires in ${diff.inHours}h ${diff.inMinutes % 60}m';
+      } else {
+        timeDetail = 'Driver arriving soon';
+      }
+    } catch (_) {}
+  }
+
+  String listedAgo = '';
+  final rawCreated = j['created_at'] as String?;
+  if (rawCreated != null) {
+    try {
+      final created = DateTime.parse(rawCreated);
+      final diff = DateTime.now().difference(created);
+      if (diff.inMinutes < 60) {
+        listedAgo = '${diff.inMinutes}m ago';
+      } else if (diff.inHours < 24) {
+        listedAgo = '${diff.inHours}h ago';
+      } else {
+        listedAgo = '${diff.inDays}d ago';
+      }
+    } catch (_) {}
+  }
+
+  return _Listing(
+    name: j['food_name'] as String? ?? '',
+    quantity: j['quantity'] as int? ?? 0,
+    status: status,
+    timeDetail: timeDetail,
+    listedAgo: listedAgo,
+    reservationCount: j['reservation_count'] as int? ?? 0,
+  );
+}
 
 // ─── Root screen ──────────────────────────────────────────────────────────────
 
@@ -55,39 +86,46 @@ class RestaurantDashboardScreen extends StatefulWidget {
 
 class _RestaurantDashboardScreenState
     extends State<RestaurantDashboardScreen> {
-  int _tab = 0;
+  // Nav indices: 0=Home, 1=Post(action), 2=Requests, 3=Profile
+  // Stack indices: 0=Home, 1=Requests, 2=Profile
+  int _navIndex = 0;
+
+  int get _stackIndex => switch (_navIndex) {
+        2 => 1,
+        3 => 2,
+        _ => 0,
+      };
+
+  void _onNavTap(int i) {
+    if (i == 1) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const PostSurplusFoodScreen()),
+      );
+      return;
+    }
+    setState(() => _navIndex = i);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       body: IndexedStack(
-        index: _tab,
-        children: [
-          const _HomeTab(),
-          _empty('Orders'),
-          _empty('Messages'),
-          _empty('Profile'),
+        index: _stackIndex,
+        children: const [
+          _HomeTab(),
+          ManageRequestsScreen(),
+          ProfileScreen(),
         ],
       ),
-      floatingActionButton: _PostSurplusFab(),
+      floatingActionButton: _navIndex == 0 ? _PostSurplusFab() : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       bottomNavigationBar: _BottomNav(
-        currentIndex: _tab,
-        onTap: (i) => setState(() => _tab = i),
+        currentIndex: _navIndex,
+        onTap: _onNavTap,
       ),
     );
   }
-
-  Widget _empty(String label) => Center(
-        child: Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 16,
-            color: const Color(0xFF94A3B8),
-          ),
-        ),
-      );
 }
 
 // ─── Post Surplus Food FAB ────────────────────────────────────────────────────
@@ -155,29 +193,23 @@ class _BottomNav extends StatelessWidget {
         surfaceTintColor: Colors.transparent,
         shadowColor: const Color(0x1A000000),
         elevation: 8,
-        destinations: [
-          const NavigationDestination(
+        destinations: const [
+          NavigationDestination(
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home),
             label: 'Home',
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long),
-            label: 'Orders',
+          NavigationDestination(
+            icon: Icon(Icons.add_circle_outline),
+            selectedIcon: Icon(Icons.add_circle),
+            label: 'Post',
           ),
           NavigationDestination(
-            icon: Badge(
-              label: Text('2', style: GoogleFonts.inter(fontSize: 10)),
-              child: const Icon(Icons.chat_bubble_outline),
-            ),
-            selectedIcon: Badge(
-              label: Text('2', style: GoogleFonts.inter(fontSize: 10)),
-              child: const Icon(Icons.chat_bubble),
-            ),
-            label: 'Messages',
+            icon: Icon(Icons.inbox_outlined),
+            selectedIcon: Icon(Icons.inbox),
+            label: 'Requests',
           ),
-          const NavigationDestination(
+          NavigationDestination(
             icon: Icon(Icons.person_outline),
             selectedIcon: Icon(Icons.person),
             label: 'Profile',
@@ -190,22 +222,53 @@ class _BottomNav extends StatelessWidget {
 
 // ─── Home tab ─────────────────────────────────────────────────────────────────
 
-class _HomeTab extends StatelessWidget {
+class _HomeTab extends StatefulWidget {
   const _HomeTab();
 
   @override
+  State<_HomeTab> createState() => _HomeTabState();
+}
+
+class _HomeTabState extends State<_HomeTab> {
+  List<_Listing> _listings = [];
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    try {
+      final raw = await ApiService.instance.getMyListings();
+      if (!mounted) return;
+      setState(() => _listings = raw
+          .map((j) => _listingFromJson(j as Map<String, dynamic>))
+          .toList());
+    } catch (_) {
+      // keep empty on error
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 110),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            _Header(),
-            SizedBox(height: 28),
-            _ActiveListingsSection(),
-          ],
-        ),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 110),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _Header(),
+          const SizedBox(height: 24),
+          const _SustainabilitySection(),
+          const SizedBox(height: 24),
+          _ActiveListingsSection(listings: _listings, loading: _loading),
+          const SizedBox(height: 24),
+          const _RecentActivitySection(),
+        ],
       ),
     );
   }
@@ -279,7 +342,10 @@ class _Header extends StatelessWidget {
 // ─── Active listings section ──────────────────────────────────────────────────
 
 class _ActiveListingsSection extends StatelessWidget {
-  const _ActiveListingsSection();
+  final List<_Listing> listings;
+  final bool loading;
+
+  const _ActiveListingsSection({required this.listings, this.loading = false});
 
   @override
   Widget build(BuildContext context) {
@@ -311,27 +377,40 @@ class _ActiveListingsSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-
-        // Dashed border container
-        CustomPaint(
-          painter: _DashedBorderPainter(),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              children: [
-                for (int i = 0; i < _dummyListings.length; i++) ...[
-                  _ListingCard(listing: _dummyListings[i]),
-                  if (i < _dummyListings.length - 1)
-                    const Divider(
-                      height: 24,
-                      color: Color(0xFFF1F5F9),
-                    ),
+        if (loading)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: CircularProgressIndicator(color: Color(0xFF1A5C38)),
+            ),
+          )
+        else if (listings.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Center(
+              child: Text(
+                'No active listings yet.',
+                style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF94A3B8)),
+              ),
+            ),
+          )
+        else
+          CustomPaint(
+            painter: _DashedBorderPainter(),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                children: [
+                  for (int i = 0; i < listings.length; i++) ...[
+                    _ListingCard(listing: listings[i]),
+                    if (i < listings.length - 1)
+                      const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
-        ),
       ],
     );
   }
@@ -538,4 +617,258 @@ class _DashedBorderPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// ─── Sustainability impact section ────────────────────────────────────────────
+
+class _SustainabilitySection extends StatelessWidget {
+  const _SustainabilitySection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Sustainability Impact',
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+            color: const Color(0xFF0F172A),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            _ImpactCard(
+              icon: Icons.eco_rounded,
+              value: '428',
+              label: 'MEALS\nSAVED',
+            ),
+            const SizedBox(width: 10),
+            _ImpactCard(
+              icon: Icons.cloud_outlined,
+              value: '1.2t',
+              label: 'CO2\nREDUCED',
+            ),
+            const SizedBox(width: 10),
+            _ImpactCard(
+              icon: Icons.favorite_rounded,
+              value: '350',
+              label: 'PEOPLE\nFED',
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _ImpactCard extends StatelessWidget {
+  final IconData icon;
+  final String value;
+  final String label;
+
+  const _ImpactCard({
+    required this.icon,
+    required this.value,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A5C38),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, size: 18, color: Colors.white),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              value,
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w800,
+                fontSize: 20,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+                height: 1.4,
+                color: Colors.white.withValues(alpha: 0.75),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Recent activity section ──────────────────────────────────────────────────
+
+class _ActivityItem {
+  final IconData icon;
+  final Color iconBg;
+  final Color iconColor;
+  final String title;
+  final String subtitle;
+  final String time;
+
+  const _ActivityItem({
+    required this.icon,
+    required this.iconBg,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    required this.time,
+  });
+}
+
+const _activities = [
+  _ActivityItem(
+    icon: Icons.volunteer_activism_rounded,
+    iconBg: Color(0xFFEFF6FF),
+    iconColor: Color(0xFF3B82F6),
+    title: 'Donation Picked Up',
+    subtitle: '12kg of surplus grains by FoodBank Local',
+    time: 'Yesterday',
+  ),
+  _ActivityItem(
+    icon: Icons.star_rounded,
+    iconBg: Color(0xFFECFDF5),
+    iconColor: Color(0xFF1A5C38),
+    title: 'New Achievement!',
+    subtitle: '"Zero Waste Hero" badge earned',
+    time: '2d ago',
+  ),
+  _ActivityItem(
+    icon: Icons.group_rounded,
+    iconBg: Color(0xFFF5F3FF),
+    iconColor: Color(0xFF7C3AED),
+    title: '15 New Followers',
+    subtitle: 'Community members tracking your listings',
+    time: '1d ago',
+  ),
+];
+
+class _RecentActivitySection extends StatelessWidget {
+  const _RecentActivitySection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Recent Activity',
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+            color: const Color(0xFF0F172A),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x08000000),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              for (int i = 0; i < _activities.length; i++) ...[
+                _ActivityRow(item: _activities[i]),
+                if (i < _activities.length - 1)
+                  const Divider(height: 1, color: Color(0xFFF1F5F9), indent: 56),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ActivityRow extends StatelessWidget {
+  final _ActivityItem item;
+
+  const _ActivityRow({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: item.iconBg,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(item.icon, size: 18, color: item.iconColor),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.title,
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    color: const Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  item.subtitle,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: const Color(0xFF94A3B8),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            item.time,
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              color: const Color(0xFF94A3B8),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
