@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
 
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
@@ -63,3 +65,47 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+
+---
+
+## Project: Wafra — Food Sharing App
+
+Flutter mobile app (food surplus sharing platform). Restaurants post surplus food; individuals and food banks can reserve and pick it up.
+
+### Common Commands
+
+```bash
+flutter pub get          # install dependencies
+flutter run              # run on connected device/emulator
+flutter analyze          # lint (uses flutter_lints)
+flutter test             # run tests (lib/test/)
+flutter build apk        # build Android APK
+```
+
+### Architecture
+
+**Entry point:** `lib/main.dart` → `SplashScreen` (2s delay) → `OnboardingScreen`
+
+**Navigation pattern:** Imperative — `Navigator.pushReplacement` / `pushAndRemoveUntil`. No named routes, no router package. After login, the app calls `GET /users/me` to read `role` and `verification_status`, then pushes the appropriate screen.
+
+**Role-based screens after login:**
+- `restaurant` + `approved` → `RestaurantDashboardScreen`
+- `food_bank` + `approved` → `FoodBankDashboardScreen`
+- `individual` + `approved` → `ExploreScreen`
+- `admin` → `AdminDashboardScreen`
+- any role + `pending` → `PendingVerificationScreen`
+
+**State management:** Plain `setState` throughout. No provider/bloc/riverpod.
+
+**API layer:** `lib/services/api_service.dart` — singleton (`ApiService.instance`). All HTTP calls go through here. Auth is cookie-based: the token is extracted from the `set-cookie` response header and sent back as `Cookie: token=<value>`. Backend base URL is `http://10.0.2.2:5000` (Android emulator localhost pointing to the host machine).
+
+**Model:** `lib/models/food_listing.dart` — `FoodListing.fromJson()` maps API responses to the UI model and derives visual properties (icon, colors) from the food category string.
+
+**Key dependencies:**
+- `google_fonts` — Inter font used throughout
+- `http` — all API calls
+- `flutter_lints` — lint rules in `analysis_options.yaml`
+
+**Layout constraint:** `main.dart` clamps the app width to 430px via a `builder` wrapper so it looks like a phone on web/desktop.
+
+**Assets:** `assets/images/` — declared in `pubspec.yaml`.
