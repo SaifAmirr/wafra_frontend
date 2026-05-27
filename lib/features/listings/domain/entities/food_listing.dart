@@ -55,10 +55,10 @@ class FoodListing {
       } catch (_) {}
     }
 
-    final tags = (json['dietary_tags'] as List<dynamic>?)
-            ?.map((e) => e.toString())
-            .toList() ??
-        [];
+    final rawTags = json['dietary_tags'];
+    final tags = rawTags is List
+        ? rawTags.map((e) => e.toString()).toList()
+        : <String>[];
 
     return FoodListing(
       listingId: json['listing_id'] as int?,
@@ -67,7 +67,7 @@ class FoodListing {
       distance: (json['distance'] as num?)?.toDouble() ?? 0.0,
       originalPrice: (json['original_price'] as num?)?.toDouble() ?? 0.0,
       discountedPrice: (json['discounted_price'] as num?)?.toDouble() ?? 0.0,
-      itemsLeft: json['quantity'] as int? ?? 0,
+      itemsLeft: (json['quantity'] as num?)?.toInt() ?? 0,
       expiresIn: expiresIn,
       imageBg: bg,
       imageIconColor: iconColor,
