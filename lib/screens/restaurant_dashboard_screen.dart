@@ -28,7 +28,7 @@ class _Listing {
 }
 
 _Listing _listingFromJson(Map<String, dynamic> j) {
-  final status = (j['status'] as String?) == 'active'
+  final status = (j['status'] as String?) == 'available'
       ? _ListingStatus.active
       : _ListingStatus.pending;
 
@@ -86,9 +86,8 @@ class RestaurantDashboardScreen extends StatefulWidget {
 
 class _RestaurantDashboardScreenState
     extends State<RestaurantDashboardScreen> {
-  // Nav indices: 0=Home, 1=Post(action), 2=Requests, 3=Profile
-  // Stack indices: 0=Home, 1=Requests, 2=Profile
   int _navIndex = 0;
+  final _homeTabKey = GlobalKey<_HomeTabState>();
 
   int get _stackIndex => switch (_navIndex) {
         2 => 1,
@@ -98,9 +97,9 @@ class _RestaurantDashboardScreenState
 
   void _onNavTap(int i) {
     if (i == 1) {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const PostSurplusFoodScreen()),
-      );
+      Navigator.of(context)
+          .push(MaterialPageRoute(builder: (_) => const PostSurplusFoodScreen()))
+          .then((_) => _homeTabKey.currentState?._load());
       return;
     }
     setState(() => _navIndex = i);
@@ -112,13 +111,15 @@ class _RestaurantDashboardScreenState
       backgroundColor: const Color(0xFFF8FAFC),
       body: IndexedStack(
         index: _stackIndex,
-        children: const [
-          _HomeTab(),
-          ManageRequestsScreen(),
-          ProfileScreen(),
+        children: [
+          _HomeTab(key: _homeTabKey),
+          const ManageRequestsScreen(),
+          const ProfileScreen(),
         ],
       ),
-      floatingActionButton: _navIndex == 0 ? _PostSurplusFab() : null,
+      floatingActionButton: _navIndex == 0
+          ? _PostSurplusFab(onPosted: () => _homeTabKey.currentState?._load())
+          : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       bottomNavigationBar: _BottomNav(
         currentIndex: _navIndex,
@@ -131,12 +132,15 @@ class _RestaurantDashboardScreenState
 // ─── Post Surplus Food FAB ────────────────────────────────────────────────────
 
 class _PostSurplusFab extends StatelessWidget {
+  final VoidCallback? onPosted;
+  const _PostSurplusFab({this.onPosted});
+
   @override
   Widget build(BuildContext context) {
     return FloatingActionButton.extended(
-      onPressed: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const PostSurplusFoodScreen()),
-      ),
+      onPressed: () => Navigator.of(context)
+          .push(MaterialPageRoute(builder: (_) => const PostSurplusFoodScreen()))
+          .then((_) => onPosted?.call()),
       backgroundColor: const Color(0xFF1A5C38),
       elevation: 4,
       icon: const Icon(Icons.add, color: Colors.white, size: 20),
@@ -223,7 +227,7 @@ class _BottomNav extends StatelessWidget {
 // ─── Home tab ─────────────────────────────────────────────────────────────────
 
 class _HomeTab extends StatefulWidget {
-  const _HomeTab();
+  const _HomeTab({super.key});
 
   @override
   State<_HomeTab> createState() => _HomeTabState();
