@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:wafra_frontend/core/network/api_service.dart';
 import 'package:wafra_frontend/features/listings/domain/entities/food_listing.dart';
 
 class FoodListingDetailScreen extends StatefulWidget {
@@ -14,6 +15,41 @@ class FoodListingDetailScreen extends StatefulWidget {
 
 class _FoodListingDetailScreenState extends State<FoodListingDetailScreen> {
   bool _bookmarked = false;
+  bool _reserving = false;
+
+  Future<void> _reserve() async {
+    final id = widget.listing.listingId;
+    if (id == null) return;
+    setState(() => _reserving = true);
+    try {
+      await ApiService.instance.createReservation(id, 1);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Reservation made successfully!'),
+          backgroundColor: Color(0xFF1A5C38),
+        ),
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Could not connect to server.'),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _reserving = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -309,7 +345,7 @@ class _FoodListingDetailScreenState extends State<FoodListingDetailScreen> {
                 ],
               ),
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: _reserving ? null : _reserve,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF1A5C38),
                   foregroundColor: Colors.white,
@@ -319,13 +355,22 @@ class _FoodListingDetailScreenState extends State<FoodListingDetailScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: Text(
-                  'Reserve Now',
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 18,
-                  ),
-                ),
+                child: _reserving
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Text(
+                        'Reserve Now',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 18,
+                        ),
+                      ),
               ),
             ),
           ),

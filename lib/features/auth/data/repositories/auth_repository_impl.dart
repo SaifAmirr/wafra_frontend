@@ -36,4 +36,38 @@ class AuthRepositoryImpl implements AuthRepository {
         phone: phone,
         businessLicenseNumber: businessLicenseNumber,
       );
+
+  @override
+  Future<void> completeIndividualProfile({
+    String? firstName,
+    String? lastName,
+    String? phone,
+    String? birthdate,
+  }) =>
+      _dataSource.completeIndividualProfile(
+        firstName: firstName,
+        lastName: lastName,
+        phone: phone,
+        birthdate: birthdate,
+      );
+
+  @override
+  Future<void> completeFoodBankProfile({
+    required String organizationName,
+    String? registrationNumber,
+    String? phone,
+    String? location,
+  }) =>
+      _dataSource.completeFoodBankProfile(
+        organizationName: organizationName,
+        registrationNumber: registrationNumber,
+        phone: phone,
+        location: location,
+      );
+
+  @override
+  Future<User> getMe() async {
+    final json = await _dataSource.getMe();
+    return User.fromJson(json);
+  }
 }

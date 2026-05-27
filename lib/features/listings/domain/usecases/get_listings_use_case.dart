@@ -5,5 +5,6 @@ class GetListingsUseCase {
   final ListingsRepository _repository;
   const GetListingsUseCase(this._repository);
 
-  List<FoodListing> execute() => _repository.getListings();
+  Future<List<FoodListing>> execute({String? category}) =>
+      _repository.getListings(category: category);
 }

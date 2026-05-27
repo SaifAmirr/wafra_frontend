@@ -11,4 +11,17 @@ abstract class AuthRepository {
     required String phone,
     required String businessLicenseNumber,
   });
+  Future<void> completeIndividualProfile({
+    String? firstName,
+    String? lastName,
+    String? phone,
+    String? birthdate,
+  });
+  Future<void> completeFoodBankProfile({
+    required String organizationName,
+    String? registrationNumber,
+    String? phone,
+    String? location,
+  });
+  Future<User> getMe();
 }

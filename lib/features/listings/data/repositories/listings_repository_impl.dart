@@ -7,5 +7,27 @@ class ListingsRepositoryImpl implements ListingsRepository {
   const ListingsRepositoryImpl(this._dataSource);
 
   @override
-  List<FoodListing> getListings() => _dataSource.getListings();
+  Future<List<FoodListing>> getListings({String? category}) =>
+      _dataSource.getListings(category: category);
+
+  @override
+  Future<List<FoodListing>> getMyListings() => _dataSource.getMyListings();
+
+  @override
+  Future<void> createListing({
+    required String foodName,
+    required String category,
+    required int quantity,
+    required String pickupTime,
+    required String location,
+    List<String>? dietaryTags,
+  }) =>
+      _dataSource.createListing(
+        foodName: foodName,
+        category: category,
+        quantity: quantity,
+        pickupTime: pickupTime,
+        location: location,
+        dietaryTags: dietaryTags,
+      );
 }

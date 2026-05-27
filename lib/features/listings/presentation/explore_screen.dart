@@ -362,7 +362,16 @@ class _ExploreTabState extends State<_ExploreTab> {
                           ),
                         ),
                       ),
-                      child: _FoodCard(listing: _listings[i]),
+                      child: _FoodCard(
+                        listing: _listings[i],
+                        onReserve: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => FoodListingDetailScreen(
+                              listing: _listings[i],
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                   childCount: _listings.length,
@@ -435,8 +444,9 @@ class _ViewToggle extends StatelessWidget {
 
 class _FoodCard extends StatelessWidget {
   final FoodListing listing;
+  final VoidCallback? onReserve;
 
-  const _FoodCard({required this.listing});
+  const _FoodCard({required this.listing, this.onReserve});
 
   @override
   Widget build(BuildContext context) {
@@ -602,7 +612,7 @@ class _FoodCard extends StatelessWidget {
                     ),
                     const Spacer(),
                     ElevatedButton(
-                      onPressed: () {},
+                      onPressed: onReserve,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF1A5C38),
                         foregroundColor: Colors.white,
