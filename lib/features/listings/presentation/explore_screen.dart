@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wafra_frontend/features/listings/domain/entities/food_listing.dart';
 import 'package:wafra_frontend/features/listings/presentation/food_listing_detail_screen.dart';
-import 'package:wafra_frontend/features/listings/providers/listings_providers.dart';
+import 'package:wafra_frontend/features/listings/presentation/my_reservations_screen.dart';
+import 'package:wafra_frontend/features/dashboard/presentation/profile_screen.dart';
+import 'package:wafra_frontend/core/network/api_service.dart';
 
 const _categories = ['All', 'Vegetarian', 'Bakery', 'Meals'];
 
@@ -26,9 +28,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
         index: _tab,
         children: [
           const _ExploreTab(),
-          _emptyTab('Reservations'),
-          _emptyTab('Messages'),
-          _emptyTab('Profile'),
+          MyReservationsScreen(onGoExplore: () => setState(() => _tab = 0)),
+          const ProfileScreen(),
         ],
       ),
       bottomNavigationBar: _BottomNav(
@@ -37,13 +38,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
       ),
     );
   }
-
-  Widget _emptyTab(String label) => Center(
-        child: Text(
-          label,
-          style: GoogleFonts.inter(fontSize: 16, color: const Color(0xFF94A3B8)),
-        ),
-      );
 }
 
 // ─── Bottom navigation bar ────────────────────────────────────────────────────
@@ -82,29 +76,18 @@ class _BottomNav extends StatelessWidget {
         surfaceTintColor: Colors.transparent,
         shadowColor: const Color(0x1A000000),
         elevation: 8,
-        destinations: [
-          const NavigationDestination(
+        destinations: const [
+          NavigationDestination(
             icon: Icon(Icons.explore_outlined),
             selectedIcon: Icon(Icons.explore),
             label: 'Explore',
           ),
-          const NavigationDestination(
+          NavigationDestination(
             icon: Icon(Icons.bookmark_border),
             selectedIcon: Icon(Icons.bookmark),
             label: 'Reservations',
           ),
           NavigationDestination(
-            icon: Badge(
-              label: Text('2', style: GoogleFonts.inter(fontSize: 10)),
-              child: const Icon(Icons.chat_bubble_outline),
-            ),
-            selectedIcon: Badge(
-              label: Text('2', style: GoogleFonts.inter(fontSize: 10)),
-              child: const Icon(Icons.chat_bubble),
-            ),
-            label: 'Messages',
-          ),
-          const NavigationDestination(
             icon: Icon(Icons.person_outline),
             selectedIcon: Icon(Icons.person),
             label: 'Profile',
@@ -127,9 +110,28 @@ class _ExploreTab extends StatefulWidget {
 class _ExploreTabState extends State<_ExploreTab> {
   int _selectedCategory = 0;
   bool _listView = true;
+  List<FoodListing> _listings = [];
+  bool _loadingListings = false;
 
-  final List<FoodListing> _listings =
-      ListingsProviders.getListingsUseCase.execute();
+  @override
+  void initState() {
+    super.initState();
+    _loadListings();
+  }
+
+  Future<void> _loadListings() async {
+    setState(() => _loadingListings = true);
+    try {
+      final category = _selectedCategory == 0 ? null : _categories[_selectedCategory];
+      final raw = await ApiService.instance.getListings(category: category);
+      if (!mounted) return;
+      setState(() => _listings = raw.map((j) => FoodListing.fromJson(j as Map<String, dynamic>)).toList());
+    } catch (_) {
+      // keep list empty on error
+    } finally {
+      if (mounted) setState(() => _loadingListings = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -226,8 +228,10 @@ class _ExploreTabState extends State<_ExploreTab> {
                             right: i < _categories.length - 1 ? 8 : 0,
                           ),
                           child: GestureDetector(
-                            onTap: () =>
-                                setState(() => _selectedCategory = i),
+                            onTap: () {
+                              setState(() => _selectedCategory = i);
+                              _loadListings();
+                            },
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 200),
                               padding: const EdgeInsets.symmetric(
@@ -330,27 +334,41 @@ class _ExploreTabState extends State<_ExploreTab> {
           ),
 
           // Listing cards
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, i) => Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: GestureDetector(
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => FoodListingDetailScreen(
-                          listing: _listings[i],
+          if (_loadingListings)
+            const SliverFillRemaining(
+              child: Center(child: CircularProgressIndicator(color: Color(0xFF1A5C38))),
+            )
+          else if (_listings.isEmpty)
+            SliverFillRemaining(
+              child: Center(
+                child: Text(
+                  'No listings found.',
+                  style: GoogleFonts.inter(fontSize: 15, color: Color(0xFF94A3B8)),
+                ),
+              ),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, i) => Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: GestureDetector(
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => FoodListingDetailScreen(
+                            listing: _listings[i],
+                          ),
                         ),
                       ),
+                      child: _FoodCard(listing: _listings[i]),
                     ),
-                    child: _FoodCard(listing: _listings[i]),
                   ),
+                  childCount: _listings.length,
                 ),
-                childCount: _listings.length,
               ),
             ),
-          ),
         ],
       ),
     );

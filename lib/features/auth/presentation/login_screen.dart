@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:wafra_frontend/core/errors/app_failure.dart';
-import 'package:wafra_frontend/features/auth/presentation/role_selection_screen.dart';
-import 'package:wafra_frontend/features/auth/presentation/signup_screen.dart';
-import 'package:wafra_frontend/features/auth/providers/auth_providers.dart';
-import 'package:wafra_frontend/features/dashboard/presentation/restaurant_dashboard_screen.dart';
+import 'package:wafra_frontend/features/admin/presentation/admin_dashboard_screen.dart';
 import 'package:wafra_frontend/features/listings/presentation/explore_screen.dart';
+import 'package:wafra_frontend/features/dashboard/presentation/food_bank_dashboard_screen.dart';
+import 'package:wafra_frontend/features/auth/presentation/pending_verification_screen.dart';
+import 'package:wafra_frontend/features/dashboard/presentation/restaurant_dashboard_screen.dart';
+import 'package:wafra_frontend/features/auth/presentation/signup_screen.dart';
+import 'package:wafra_frontend/core/network/api_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,64 +19,72 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _isLoading = false;
-
-  Future<void> _submit() async {
-    final email = _emailController.text.trim();
-    final password = _passwordController.text;
-
-    if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields.')),
-      );
-      return;
-    }
-
-    setState(() => _isLoading = true);
-    try {
-      final user =
-          await AuthProviders.loginUseCase.execute(email, password);
-      if (!mounted) return;
-
-      final role = user.role;
-      final status = user.verificationStatus;
-
-      if (role == null || status == 'incomplete') {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
-          (r) => false,
-        );
-      } else if (status == 'approved') {
-        final dest = role == 'restaurant'
-            ? const RestaurantDashboardScreen()
-            : const ExploreScreen();
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => dest),
-          (r) => false,
-        );
-      } else {
-        // pending — account awaiting admin approval
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Your account is pending admin approval.'),
-          ),
-        );
-      }
-    } on AppFailure catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
+  bool _loading = false;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _login() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    if (email.isEmpty || password.isEmpty) {
+      _showError('Please enter your email and password.');
+      return;
+    }
+    setState(() => _loading = true);
+    try {
+      await ApiService.instance.login(email, password);
+      final me = await ApiService.instance.getMe();
+      final user = me['user'] as Map<String, dynamic>?;
+      final role = user?['role'] as String?;
+      final status = user?['verification_status'] as String?;
+      if (!mounted) return;
+      if (status == 'pending') {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+              builder: (_) => PendingVerificationScreen(role: role ?? '')),
+          (r) => false,
+        );
+        return;
+      }
+      if (role == 'admin') {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
+          (r) => false,
+        );
+      } else if (role == 'restaurant') {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const RestaurantDashboardScreen()),
+          (r) => false,
+        );
+      } else if (role == 'foodbank') {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const FoodBankDashboardScreen()),
+          (r) => false,
+        );
+      } else {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const ExploreScreen()),
+          (r) => false,
+        );
+      }
+    } on ApiException catch (e) {
+      _showError(e.message);
+    } catch (_) {
+      _showError('Could not connect to server.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: Colors.red.shade700),
+    );
   }
 
   @override
@@ -189,18 +198,16 @@ class _LoginScreenState extends State<LoginScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : _submit,
+                  onPressed: _loading ? null : _login,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1A5C38),
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor:
-                        const Color(0xFF1A5C38).withValues(alpha: 0.6),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: _isLoading
+                  child: _loading
                       ? const SizedBox(
                           width: 22,
                           height: 22,

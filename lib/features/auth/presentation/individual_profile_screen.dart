@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wafra_frontend/features/listings/presentation/explore_screen.dart';
+import 'package:wafra_frontend/core/network/api_service.dart';
 
 class IndividualProfileScreen extends StatefulWidget {
   const IndividualProfileScreen({super.key});
@@ -15,6 +16,7 @@ class _IndividualProfileScreenState extends State<IndividualProfileScreen> {
   final _lastNameController = TextEditingController();
   final _phoneController = TextEditingController();
   DateTime? _birthdate;
+  bool _loading = false;
 
   @override
   void dispose() {
@@ -43,6 +45,28 @@ class _IndividualProfileScreenState extends State<IndividualProfileScreen> {
       ),
     );
     if (picked != null) setState(() => _birthdate = picked);
+  }
+
+  Future<void> _submit() async {
+    setState(() => _loading = true);
+    try {
+      await ApiService.instance.completeIndividualProfile(
+        firstName: _firstNameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
+        phone: _phoneController.text.trim(),
+        birthdate: _birthdate != null
+            ? '${_birthdate!.year}-${_birthdate!.month.toString().padLeft(2, '0')}-${_birthdate!.day.toString().padLeft(2, '0')}'
+            : null,
+      );
+    } catch (_) {
+      // Profile save is best-effort; user is already authenticated so proceed.
+    }
+    if (!mounted) return;
+    setState(() => _loading = false);
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const ExploreScreen()),
+      (r) => false,
+    );
   }
 
   String get _birthdateDisplay {
@@ -184,8 +208,7 @@ class _IndividualProfileScreenState extends State<IndividualProfileScreen> {
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(12),
-                              border:
-                                  Border.all(color: const Color(0xFFE2E8F0)),
+                              border: Border.all(color: const Color(0xFFE2E8F0)),
                             ),
                             child: Row(
                               children: [
@@ -223,25 +246,35 @@ class _IndividualProfileScreenState extends State<IndividualProfileScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () => Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (_) => const ExploreScreen()),
-                  ),
+                  onPressed: _loading ? null : _submit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1A5C38),
+                    disabledBackgroundColor:
+                        const Color(0xFF1A5C38).withValues(alpha: 0.4),
                     foregroundColor: Colors.white,
+                    disabledForegroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: Text(
-                    'Complete Setup',
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 18,
-                      height: 27 / 18,
-                    ),
-                  ),
+                  child: _loading
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          'Complete Setup',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 18,
+                            height: 27 / 18,
+                          ),
+                        ),
                 ),
               ),
             ),

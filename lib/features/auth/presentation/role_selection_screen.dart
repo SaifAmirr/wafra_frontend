@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:wafra_frontend/core/errors/app_failure.dart';
+import 'package:wafra_frontend/features/auth/presentation/food_bank_profile_screen.dart';
 import 'package:wafra_frontend/features/auth/presentation/individual_profile_screen.dart';
 import 'package:wafra_frontend/features/auth/presentation/restaurant_profile_screen.dart';
-import 'package:wafra_frontend/features/auth/providers/auth_providers.dart';
+import 'package:wafra_frontend/core/network/api_service.dart';
 
 enum UserRole { restaurant, individual, foodBank }
 
@@ -16,42 +16,45 @@ class RoleSelectionScreen extends StatefulWidget {
 
 class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   UserRole? _selectedRole;
-  bool _isLoading = false;
+  bool _loading = false;
 
-  String _roleToString(UserRole role) => switch (role) {
-        UserRole.restaurant => 'restaurant',
-        UserRole.individual => 'individual',
-        UserRole.foodBank => 'foodbank',
-      };
+  static const _roleStrings = {
+    UserRole.restaurant: 'restaurant',
+    UserRole.individual: 'individual',
+    UserRole.foodBank: 'foodbank',
+  };
 
-  Future<void> _submit() async {
+  Future<void> _chooseRole() async {
     if (_selectedRole == null) return;
-    setState(() => _isLoading = true);
+    setState(() => _loading = true);
     try {
-      await AuthProviders.chooseRoleUseCase
-          .execute(_roleToString(_selectedRole!));
+      await ApiService.instance.chooseRole(_roleStrings[_selectedRole]!);
       if (!mounted) return;
       switch (_selectedRole) {
         case UserRole.restaurant:
           Navigator.of(context).push(
-            MaterialPageRoute(
-                builder: (_) => const RestaurantProfileScreen()),
+            MaterialPageRoute(builder: (_) => const RestaurantProfileScreen()),
           );
         case UserRole.individual:
           Navigator.of(context).push(
-            MaterialPageRoute(
-                builder: (_) => const IndividualProfileScreen()),
+            MaterialPageRoute(builder: (_) => const IndividualProfileScreen()),
           );
         case UserRole.foodBank:
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const FoodBankProfileScreen()),
+          );
         case null:
-          break;
       }
-    } on AppFailure catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.message)));
+    } on ApiException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message), backgroundColor: Colors.red.shade700),
+      );
+    } catch (_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not connect to server.'), backgroundColor: Colors.red),
+      );
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -77,9 +80,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                     ),
                   ),
                   const Expanded(
-                    child: Center(
-                        child:
-                            _ProgressDots(currentStep: 0, totalSteps: 3)),
+                    child: Center(child: _ProgressDots(currentStep: 0, totalSteps: 3)),
                   ),
                   const SizedBox(width: 20),
                 ],
@@ -115,8 +116,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                 iconBg: const Color(0xFFF2F2F7),
                 iconColor: const Color(0xFF64748B),
                 selected: _selectedRole == UserRole.restaurant,
-                onTap: () =>
-                    setState(() => _selectedRole = UserRole.restaurant),
+                onTap: () => setState(() => _selectedRole = UserRole.restaurant),
               ),
               const SizedBox(height: 16),
 
@@ -127,8 +127,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                 iconBg: const Color(0xFFEFF6FF),
                 iconColor: const Color(0xFF3B82F6),
                 selected: _selectedRole == UserRole.individual,
-                onTap: () =>
-                    setState(() => _selectedRole = UserRole.individual),
+                onTap: () => setState(() => _selectedRole = UserRole.individual),
               ),
               const SizedBox(height: 16),
 
@@ -139,8 +138,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                 iconBg: const Color(0xFFF5F3FF),
                 iconColor: const Color(0xFF8B5CF6),
                 selected: _selectedRole == UserRole.foodBank,
-                onTap: () =>
-                    setState(() => _selectedRole = UserRole.foodBank),
+                onTap: () => setState(() => _selectedRole = UserRole.foodBank),
               ),
 
               const Spacer(),
@@ -149,8 +147,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed:
-                      (_selectedRole == null || _isLoading) ? null : _submit,
+                  onPressed: (_selectedRole == null || _loading) ? null : _chooseRole,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1A5C38),
                     disabledBackgroundColor:
@@ -162,7 +159,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: _isLoading
+                  child: _loading
                       ? const SizedBox(
                           width: 22,
                           height: 22,
@@ -221,9 +218,7 @@ class _RoleCard extends StatelessWidget {
           color: selected ? const Color(0xFFECFDF5) : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: selected
-                ? const Color(0xFF1A5C38)
-                : const Color(0xFFE2E8F0),
+            color: selected ? const Color(0xFF1A5C38) : const Color(0xFFE2E8F0),
             width: selected ? 2 : 1,
           ),
         ),

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:wafra_frontend/core/errors/app_failure.dart';
 import 'package:wafra_frontend/features/auth/presentation/login_screen.dart';
 import 'package:wafra_frontend/features/auth/presentation/role_selection_screen.dart';
-import 'package:wafra_frontend/features/auth/providers/auth_providers.dart';
+import 'package:wafra_frontend/core/network/api_service.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -17,36 +16,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _isLoading = false;
-
-  Future<void> _submit() async {
-    final username = _usernameController.text.trim();
-    final email = _emailController.text.trim();
-    final password = _passwordController.text;
-
-    if (username.isEmpty || email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields.')),
-      );
-      return;
-    }
-
-    setState(() => _isLoading = true);
-    try {
-      await AuthProviders.registerUseCase.execute(username, email, password);
-      if (!mounted) return;
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
-      );
-    } on AppFailure catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
+  bool _loading = false;
 
   @override
   void dispose() {
@@ -54,6 +24,43 @@ class _SignUpScreenState extends State<SignUpScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _register() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    if (email.isEmpty || password.isEmpty) {
+      _showError('Please enter your email and password.');
+      return;
+    }
+    setState(() => _loading = true);
+    try {
+      final username = _usernameController.text.trim();
+      if (username.isEmpty) {
+        _showError('Please enter a username.');
+        setState(() => _loading = false);
+        return;
+      }
+      await ApiService.instance.register(email, password, username);
+      // Register doesn't return a token — login immediately to get one
+      await ApiService.instance.login(email, password);
+      if (!mounted) return;
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
+      );
+    } on ApiException catch (e) {
+      _showError(e.message);
+    } catch (_) {
+      _showError('Could not connect to server.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: Colors.red.shade700),
+    );
   }
 
   @override
@@ -155,18 +162,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : _submit,
+                  onPressed: _loading ? null : _register,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1A5C38),
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor:
-                        const Color(0xFF1A5C38).withValues(alpha: 0.6),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: _isLoading
+                  child: _loading
                       ? const SizedBox(
                           width: 22,
                           height: 22,

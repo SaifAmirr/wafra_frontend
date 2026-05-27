@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wafra_frontend/features/listings/presentation/post_success_screen.dart';
+import 'package:wafra_frontend/core/network/api_service.dart';
 
 class PostSurplusFoodScreen extends StatefulWidget {
   const PostSurplusFoodScreen({super.key});
@@ -15,21 +16,9 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
   final _descriptionController = TextEditingController();
 
   int _selectedCategory = 0;
-  final _categories = [
-    'Cooked Meals',
-    'Bakery',
-    'Produce',
-    'Dairy',
-    'Beverages'
-  ];
+  final _categories = ['Cooked Meals', 'Bakery', 'Produce', 'Dairy', 'Beverages'];
 
-  final _dietaryOptions = [
-    'Vegan',
-    'Gluten-Free',
-    'Halal',
-    'Nut-Free',
-    'Dairy-Free'
-  ];
+  final _dietaryOptions = ['Vegan', 'Gluten-Free', 'Halal', 'Nut-Free', 'Dairy-Free'];
   final Set<String> _selectedDietary = {};
 
   String _selectedUnit = 'portions';
@@ -37,6 +26,7 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
 
   DateTime? _pickupDate;
   TimeOfDay? _pickupTime;
+  bool _loading = false;
 
   @override
   void dispose() {
@@ -82,6 +72,57 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
       ),
     );
     if (picked != null) setState(() => _pickupTime = picked);
+  }
+
+  Future<void> _publish() async {
+    final name = _nameController.text.trim();
+    final qtyStr = _quantityController.text.trim();
+    if (name.isEmpty) {
+      _showError('Please enter a food name.');
+      return;
+    }
+    if (qtyStr.isEmpty || int.tryParse(qtyStr) == null) {
+      _showError('Please enter a valid quantity.');
+      return;
+    }
+    if (_pickupDate == null || _pickupTime == null) {
+      _showError('Please select a pickup date and time.');
+      return;
+    }
+    final pickupDt = DateTime(
+      _pickupDate!.year,
+      _pickupDate!.month,
+      _pickupDate!.day,
+      _pickupTime!.hour,
+      _pickupTime!.minute,
+    );
+    setState(() => _loading = true);
+    try {
+      await ApiService.instance.createListing(
+        foodName: name,
+        category: _categories[_selectedCategory],
+        quantity: int.parse(qtyStr),
+        pickupTime: pickupDt.toIso8601String(),
+        location: 'Grand Avenue 124, NY',
+        dietaryTags: _selectedDietary.toList(),
+      );
+      if (!mounted) return;
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const PostSuccessScreen()),
+      );
+    } on ApiException catch (e) {
+      _showError(e.message);
+    } catch (_) {
+      _showError('Could not connect to server.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: Colors.red.shade700),
+    );
   }
 
   String get _dateDisplay {
@@ -266,7 +307,7 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
                           children: [
                             _SectionLabel('Unit'),
                             DropdownButtonFormField<String>(
-                              value: _selectedUnit,
+                              initialValue: _selectedUnit,
                               items: _units
                                   .map(
                                     (u) => DropdownMenuItem(
@@ -475,14 +516,7 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
               width: double.infinity,
               height: 56,
               child: ElevatedButton(
-                onPressed: () {
-                  // TODO: submit listing to backend
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const PostSuccessScreen(),
-                    ),
-                  );
-                },
+                onPressed: _loading ? null : _publish,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF1A5C38),
                   foregroundColor: Colors.white,
@@ -491,13 +525,22 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: Text(
-                  'Publish Listing',
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 18,
-                  ),
-                ),
+                child: _loading
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Text(
+                        'Publish Listing',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 18,
+                        ),
+                      ),
               ),
             ),
           ),
@@ -542,8 +585,7 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide:
-            const BorderSide(color: Color(0xFF1A5C38), width: 1.5),
+        borderSide: const BorderSide(color: Color(0xFF1A5C38), width: 1.5),
       ),
     );
   }
