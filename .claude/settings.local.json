@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "Bash(git merge *)",
+      "Bash(find lib/screens lib/services lib/models -name \"*.dart\")",
+      "Bash(find lib/services -name \"*.dart\")",
+      "Bash(git show *)",
+      "Read(//tmp/**)",
+      "Bash(git checkout *)",
+      "Bash(cp /tmp/admin.dart \"c:\\\\Users\\\\Saif\\\\Desktop\\\\wafra\\\\wafra_frontend\\\\lib\\\\features\\\\admin\\\\presentation\\\\admin_dashboard_screen.dart\")",
+      "Bash(cp /tmp/manage.dart \"c:\\\\Users\\\\Saif\\\\Desktop\\\\wafra\\\\wafra_frontend\\\\lib\\\\features\\\\admin\\\\presentation\\\\manage_requests_screen.dart\")",
+      "Bash(cp /tmp/fb_dash.dart \"c:\\\\Users\\\\Saif\\\\Desktop\\\\wafra\\\\wafra_frontend\\\\lib\\\\features\\\\dashboard\\\\presentation\\\\food_bank_dashboard_screen.dart\")",
+      "Bash(cp /tmp/profile.dart \"c:\\\\Users\\\\Saif\\\\Desktop\\\\wafra\\\\wafra_frontend\\\\lib\\\\features\\\\dashboard\\\\presentation\\\\profile_screen.dart\")",
+      "Bash(cp /tmp/fb_profile.dart \"c:\\\\Users\\\\Saif\\\\Desktop\\\\wafra\\\\wafra_frontend\\\\lib\\\\features\\\\auth\\\\presentation\\\\food_bank_profile_screen.dart\")",
+      "Bash(git rm *)",
+      "Bash(git add *)"
+    ]
+  }
+}
