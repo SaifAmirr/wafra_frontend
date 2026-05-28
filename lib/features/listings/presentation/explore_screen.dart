@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wafra_frontend/features/listings/domain/entities/food_listing.dart';
@@ -6,7 +8,10 @@ import 'package:wafra_frontend/features/listings/presentation/my_reservations_sc
 import 'package:wafra_frontend/features/dashboard/presentation/profile_screen.dart';
 import 'package:wafra_frontend/core/network/api_service.dart';
 
-const _categories = ['All', 'Vegetarian', 'Bakery', 'Meals'];
+// Categories match what restaurants can pick in Post Surplus Food, so chip
+// filters always correspond to a real value the backend may return.
+const _categories = ['All', 'Cooked Meals', 'Bakery', 'Produce', 'Beverages'];
+const _kBlue = Color(0xFF2563EB);
 
 // ─── Root screen with bottom nav ──────────────────────────────────────────────
 
@@ -20,6 +25,8 @@ class ExploreScreen extends StatefulWidget {
 class _ExploreScreenState extends State<ExploreScreen> {
   int _tab = 0;
 
+  void _goToReservations() => setState(() => _tab = 1);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -27,7 +34,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
       body: IndexedStack(
         index: _tab,
         children: [
-          const _ExploreTab(),
+          _ExploreTab(onReservationMade: _goToReservations),
           MyReservationsScreen(onGoExplore: () => setState(() => _tab = 0)),
           const ProfileScreen(),
         ],
@@ -53,19 +60,19 @@ class _BottomNav extends StatelessWidget {
     return NavigationBarTheme(
       data: NavigationBarThemeData(
         backgroundColor: Colors.white,
-        indicatorColor: const Color(0xFF1A5C38).withValues(alpha: 0.10),
+        indicatorColor: _kBlue.withValues(alpha: 0.10),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           final active = states.contains(WidgetState.selected);
           return GoogleFonts.inter(
             fontSize: 11,
             fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-            color: active ? const Color(0xFF1A5C38) : const Color(0xFF94A3B8),
+            color: active ? _kBlue : const Color(0xFF94A3B8),
           );
         }),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           final active = states.contains(WidgetState.selected);
           return IconThemeData(
-            color: active ? const Color(0xFF1A5C38) : const Color(0xFF94A3B8),
+            color: active ? _kBlue : const Color(0xFF94A3B8),
             size: 24,
           );
         }),
@@ -83,8 +90,8 @@ class _BottomNav extends StatelessWidget {
             label: 'Explore',
           ),
           NavigationDestination(
-            icon: Icon(Icons.bookmark_border),
-            selectedIcon: Icon(Icons.bookmark),
+            icon: Icon(Icons.calendar_today_outlined),
+            selectedIcon: Icon(Icons.calendar_today),
             label: 'Reservations',
           ),
           NavigationDestination(
@@ -101,7 +108,8 @@ class _BottomNav extends StatelessWidget {
 // ─── Explore tab ──────────────────────────────────────────────────────────────
 
 class _ExploreTab extends StatefulWidget {
-  const _ExploreTab();
+  final VoidCallback? onReservationMade;
+  const _ExploreTab({this.onReservationMade});
 
   @override
   State<_ExploreTab> createState() => _ExploreTabState();
@@ -109,9 +117,10 @@ class _ExploreTab extends StatefulWidget {
 
 class _ExploreTabState extends State<_ExploreTab> {
   int _selectedCategory = 0;
-  bool _listView = true;
   List<FoodListing> _listings = [];
   bool _loadingListings = false;
+  final _searchController = TextEditingController();
+  Timer? _searchDebounce;
 
   @override
   void initState() {
@@ -119,13 +128,27 @@ class _ExploreTabState extends State<_ExploreTab> {
     _loadListings();
   }
 
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadListings() async {
     setState(() => _loadingListings = true);
     try {
-      final category = _selectedCategory == 0 ? null : _categories[_selectedCategory];
-      final raw = await ApiService.instance.getListings(category: category);
+      final category =
+          _selectedCategory == 0 ? null : _categories[_selectedCategory];
+      final search = _searchController.text.trim();
+      final raw = await ApiService.instance.getListings(
+        category: category,
+        search: search.isEmpty ? null : search,
+      );
       if (!mounted) return;
-      setState(() => _listings = raw.map((j) => FoodListing.fromJson(j as Map<String, dynamic>)).toList());
+      setState(() => _listings = raw
+          .map((j) => FoodListing.fromJson(j as Map<String, dynamic>))
+          .toList());
     } catch (_) {
       // keep list empty on error
     } finally {
@@ -133,306 +156,212 @@ class _ExploreTabState extends State<_ExploreTab> {
     }
   }
 
+  void _onSearchChanged(String _) {
+    setState(() {}); // toggle clear button visibility
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), _loadListings);
+  }
+
+  Future<void> _openDetail(FoodListing listing) async {
+    final reserved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => FoodListingDetailScreen(listing: listing),
+      ),
+    );
+    if (!mounted) return;
+    if (reserved == true) {
+      widget.onReservationMade?.call();
+    } else {
+      // Refresh in case quantity changed elsewhere.
+      _loadListings();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Title + avatar
-                  Row(
-                    children: [
-                      Text(
-                        'Explore',
-                        style: GoogleFonts.inter(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 28,
-                          color: const Color(0xFF0F172A),
-                        ),
-                      ),
-                      const Spacer(),
-                      CircleAvatar(
-                        radius: 20,
-                        backgroundColor: const Color(0xFFE2E8F0),
-                        child: const Icon(
-                          Icons.person,
-                          color: Color(0xFF94A3B8),
-                          size: 22,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Search bar
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                    ),
-                    child: Row(
+      child: RefreshIndicator(
+        color: _kBlue,
+        onRefresh: _loadListings,
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       children: [
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 14),
-                          child: Icon(
-                            Icons.search,
+                        Text(
+                          'Explore',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 28,
+                            color: const Color(0xFF0F172A),
+                          ),
+                        ),
+                        const Spacer(),
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: const Color(0xFFE2E8F0),
+                          child: const Icon(
+                            Icons.person,
                             color: Color(0xFF94A3B8),
-                            size: 20,
-                          ),
-                        ),
-                        Expanded(
-                          child: TextField(
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              color: const Color(0xFF0F172A),
-                            ),
-                            decoration: InputDecoration(
-                              hintText: 'Search for food near you...',
-                              hintStyle: GoogleFonts.inter(
-                                fontSize: 14,
-                                color: const Color(0xFFCBD5E1),
-                              ),
-                              border: InputBorder.none,
-                              contentPadding:
-                                  const EdgeInsets.symmetric(vertical: 14),
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
-                          child: Icon(
-                            Icons.tune,
-                            color: const Color(0xFF1A5C38),
-                            size: 20,
+                            size: 22,
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 14),
+                    const SizedBox(height: 16),
 
-                  // Category chips
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: List.generate(_categories.length, (i) {
-                        final active = i == _selectedCategory;
-                        return Padding(
-                          padding: EdgeInsets.only(
-                            right: i < _categories.length - 1 ? 8 : 0,
-                          ),
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() => _selectedCategory = i);
-                              _loadListings();
-                            },
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 18,
-                                vertical: 9,
-                              ),
-                              decoration: BoxDecoration(
-                                color: active
-                                    ? const Color(0xFF1A5C38)
-                                    : Colors.white,
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: active
-                                      ? const Color(0xFF1A5C38)
-                                      : const Color(0xFFE2E8F0),
-                                ),
-                              ),
-                              child: Text(
-                                _categories[i],
-                                style: GoogleFonts.inter(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: active
-                                      ? Colors.white
-                                      : const Color(0xFF64748B),
-                                ),
-                              ),
+                    // Search bar
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 14),
+                            child: Icon(
+                              Icons.search,
+                              color: Color(0xFF94A3B8),
+                              size: 20,
                             ),
                           ),
-                        );
-                      }),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Sort + view toggle
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Distance',
+                          Expanded(
+                            child: TextField(
+                              controller: _searchController,
+                              onChanged: _onSearchChanged,
+                              textInputAction: TextInputAction.search,
+                              onSubmitted: (_) => _loadListings(),
                               style: GoogleFonts.inter(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
+                                fontSize: 14,
                                 color: const Color(0xFF0F172A),
                               ),
+                              decoration: InputDecoration(
+                                hintText: 'Search for food near you...',
+                                hintStyle: GoogleFonts.inter(
+                                  fontSize: 14,
+                                  color: const Color(0xFFCBD5E1),
+                                ),
+                                border: InputBorder.none,
+                                contentPadding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                              ),
                             ),
-                            const SizedBox(width: 4),
-                            const Icon(
-                              Icons.keyboard_arrow_down,
-                              size: 16,
-                              color: Color(0xFF64748B),
+                          ),
+                          if (_searchController.text.isNotEmpty)
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 8),
+                              child: GestureDetector(
+                                onTap: () {
+                                  _searchController.clear();
+                                  _loadListings();
+                                },
+                                child: const Icon(
+                                  Icons.close,
+                                  color: Color(0xFF94A3B8),
+                                  size: 18,
+                                ),
+                              ),
                             ),
-                          ],
-                        ),
+                        ],
                       ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
-                        ),
-                        child: Row(
-                          children: [
-                            _ViewToggle(
-                              icon: Icons.view_list_outlined,
-                              label: 'List',
-                              active: _listView,
-                              onTap: () => setState(() => _listView = true),
-                            ),
-                            _ViewToggle(
-                              icon: Icons.map_outlined,
-                              label: 'Map',
-                              active: !_listView,
-                              onTap: () => setState(() => _listView = false),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                ],
-              ),
-            ),
-          ),
+                    ),
+                    const SizedBox(height: 14),
 
-          // Listing cards
-          if (_loadingListings)
-            const SliverFillRemaining(
-              child: Center(child: CircularProgressIndicator(color: Color(0xFF1A5C38))),
-            )
-          else if (_listings.isEmpty)
-            SliverFillRemaining(
-              child: Center(
-                child: Text(
-                  'No listings found.',
-                  style: GoogleFonts.inter(fontSize: 15, color: Color(0xFF94A3B8)),
+                    // Category chips
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: List.generate(_categories.length, (i) {
+                          final active = i == _selectedCategory;
+                          return Padding(
+                            padding: EdgeInsets.only(
+                              right: i < _categories.length - 1 ? 8 : 0,
+                            ),
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() => _selectedCategory = i);
+                                _loadListings();
+                              },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 18,
+                                  vertical: 9,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: active ? _kBlue : Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: active
+                                        ? _kBlue
+                                        : const Color(0xFFE2E8F0),
+                                  ),
+                                ),
+                                child: Text(
+                                  _categories[i],
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    color: active
+                                        ? Colors.white
+                                        : const Color(0xFF64748B),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                 ),
               ),
-            )
-          else
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, i) => Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: GestureDetector(
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => FoodListingDetailScreen(
-                            listing: _listings[i],
-                          ),
-                        ),
-                      ),
-                      child: _FoodCard(
-                        listing: _listings[i],
-                        onReserve: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => FoodListingDetailScreen(
-                              listing: _listings[i],
-                            ),
-                          ),
+            ),
+
+            // Listing cards
+            if (_loadingListings)
+              const SliverFillRemaining(
+                child: Center(
+                    child: CircularProgressIndicator(color: Color(0xFF1A5C38))),
+              )
+            else if (_listings.isEmpty)
+              SliverFillRemaining(
+                child: Center(
+                  child: Text(
+                    'No listings found.',
+                    style: GoogleFonts.inter(
+                        fontSize: 15, color: const Color(0xFF94A3B8)),
+                  ),
+                ),
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, i) => Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: GestureDetector(
+                        onTap: () => _openDetail(_listings[i]),
+                        child: _FoodCard(
+                          listing: _listings[i],
+                          onReserve: () => _openDetail(_listings[i]),
                         ),
                       ),
                     ),
+                    childCount: _listings.length,
                   ),
-                  childCount: _listings.length,
                 ),
               ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── List / Map view toggle button ───────────────────────────────────────────
-
-class _ViewToggle extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-
-  const _ViewToggle({
-    required this.icon,
-    required this.label,
-    required this.active,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: active
-              ? const Color(0xFF1A5C38).withValues(alpha: 0.10)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 15,
-              color: active
-                  ? const Color(0xFF1A5C38)
-                  : const Color(0xFF94A3B8),
-            ),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-                color: active
-                    ? const Color(0xFF1A5C38)
-                    : const Color(0xFF94A3B8),
-              ),
-            ),
           ],
         ),
       ),
@@ -450,8 +379,6 @@ class _FoodCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isFree = listing.discountedPrice == 0;
-
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -477,7 +404,6 @@ class _FoodCard extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Placeholder image
                   Container(
                     color: listing.imageBg,
                     child: Icon(
@@ -486,8 +412,6 @@ class _FoodCard extends StatelessWidget {
                       color: listing.imageIconColor.withValues(alpha: 0.35),
                     ),
                   ),
-
-                  // Expires badge
                   Positioned(
                     top: 12,
                     left: 12,
@@ -521,8 +445,6 @@ class _FoodCard extends StatelessWidget {
                       ),
                     ),
                   ),
-
-                  // Items left badge
                   Positioned(
                     top: 12,
                     right: 12,
@@ -532,7 +454,7 @@ class _FoodCard extends StatelessWidget {
                         vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1A5C38),
+                        color: _kBlue,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -573,48 +495,42 @@ class _FoodCard extends StatelessWidget {
                       color: Color(0xFF94A3B8),
                     ),
                     const SizedBox(width: 4),
-                    Text(
-                      '${listing.restaurant} · ${listing.distance} miles',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: const Color(0xFF94A3B8),
+                    Expanded(
+                      child: Text(
+                        listing.restaurant,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: const Color(0xFF94A3B8),
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '\$${listing.originalPrice.toStringAsFixed(2)}',
-                          style: GoogleFonts.inter(
-                            fontSize: 13,
-                            color: const Color(0xFF94A3B8),
-                            decoration: TextDecoration.lineThrough,
-                            decorationColor: const Color(0xFF94A3B8),
-                          ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: listing.imageBg,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        listing.category.isEmpty ? 'Surplus' : listing.category,
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: listing.imageIconColor,
                         ),
-                        Text(
-                          isFree
-                              ? 'Free'
-                              : '\$${listing.discountedPrice.toStringAsFixed(2)}',
-                          style: GoogleFonts.inter(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 22,
-                            color: const Color(0xFF1A5C38),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                     const Spacer(),
                     ElevatedButton(
                       onPressed: onReserve,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1A5C38),
+                        backgroundColor: _kBlue,
                         foregroundColor: Colors.white,
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(

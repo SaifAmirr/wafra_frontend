@@ -80,7 +80,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                     ),
                   ),
                   const Expanded(
-                    child: Center(child: _ProgressDots(currentStep: 0, totalSteps: 3)),
+                    child: Center(child: _ProgressDots(currentStep: 1, totalSteps: 3)),
                   ),
                   const SizedBox(width: 20),
                 ],

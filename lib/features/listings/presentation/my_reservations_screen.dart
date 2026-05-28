@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wafra_frontend/core/network/api_service.dart';
+import 'package:wafra_frontend/features/listings/presentation/pickup_ticket_screen.dart';
 
 class MyReservationsScreen extends StatefulWidget {
   final VoidCallback? onGoExplore;
@@ -41,10 +42,23 @@ class _MyReservationsScreenState extends State<MyReservationsScreen>
       if (!mounted) return;
       setState(() => _reservations =
           raw.map((e) => e as Map<String, dynamic>).toList());
+      // After the first load, default to the most actionable tab so users see
+      // their confirmed pickup right away instead of always landing on empty
+      // "Pending".
+      _autoSelectTab();
     } catch (_) {
       // keep empty on error
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _autoSelectTab() {
+    if (_reservations.isEmpty) return;
+    final hasConfirmed =
+        _reservations.any((r) => r['status'] == 'accepted');
+    if (hasConfirmed && _tabController.index == 0) {
+      _tabController.animateTo(1);
     }
   }
 
@@ -53,6 +67,40 @@ class _MyReservationsScreenState extends State<MyReservationsScreen>
     return _reservations
         .where((r) => statuses.contains(r['status'] as String?))
         .toList();
+  }
+
+  Future<void> _cancel(int id) async {
+    try {
+      await ApiService.instance.cancelReservation(id);
+      _load();
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(e.message),
+              backgroundColor: Colors.red.shade700),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: const Text('Could not connect to server.'),
+              backgroundColor: Colors.red.shade700),
+        );
+      }
+    }
+  }
+
+  void _showCode(int id, Map<String, dynamic> r) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PickupTicketScreen(
+          reservationId: id,
+          restaurantName: r['restaurant_name'] as String? ?? 'Restaurant',
+        ),
+      ),
+    );
   }
 
   @override
@@ -88,23 +136,45 @@ class _MyReservationsScreenState extends State<MyReservationsScreen>
                   ? const Center(
                       child: CircularProgressIndicator(color: Color(0xFF2563EB)),
                     )
-                  : TabBarView(
-                      controller: _tabController,
-                      children: _tabs.map((tab) {
-                        final items = _forTab(tab);
-                        if (items.isEmpty) {
-                          return _EmptyState(
-                            tabLabel: tab,
-                            onBrowse: widget.onGoExplore ?? () {},
+                  : RefreshIndicator(
+                      onRefresh: _load,
+                      color: const Color(0xFF2563EB),
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: _tabs.map((tab) {
+                          final items = _forTab(tab);
+                          if (items.isEmpty) {
+                            return _EmptyState(
+                              tabLabel: tab,
+                              onBrowse: widget.onGoExplore ?? () {},
+                            );
+                          }
+                          return ListView.separated(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: items.length,
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(height: 12),
+                            itemBuilder: (_, i) {
+                              final r = items[i];
+                              final id = r['reservation_id'] as int?;
+                              final status = r['status'] as String? ?? '';
+                              return _ReservationCard(
+                                data: r,
+                                onCancel: status == 'pending' && id != null
+                                    ? () => _cancel(id)
+                                    : null,
+                                onShowCode: status == 'accepted' && id != null
+                                    ? () => _showCode(id, r)
+                                    : null,
+                                onFindSimilar:
+                                    (status == 'declined' || status == 'cancelled')
+                                        ? (widget.onGoExplore ?? () {})
+                                        : null,
+                              );
+                            },
                           );
-                        }
-                        return ListView.separated(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: items.length,
-                          separatorBuilder: (_, _) => const SizedBox(height: 12),
-                          itemBuilder: (_, i) => _ReservationCard(data: items[i]),
-                        );
-                      }).toList(),
+                        }).toList(),
+                      ),
                     ),
             ),
           ],
@@ -152,56 +222,54 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const _BagIllustration(),
-          const SizedBox(height: 28),
-          Text(
-            'No reservations yet',
-            style: GoogleFonts.inter(
-              fontWeight: FontWeight.w800,
-              fontSize: 20,
-              color: const Color(0xFF0F172A),
-            ),
+      children: [
+        const SizedBox(height: 40),
+        const Center(child: _BagIllustration()),
+        const SizedBox(height: 28),
+        Text(
+          'No reservations yet',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w800,
+            fontSize: 20,
+            color: const Color(0xFF0F172A),
           ),
-          const SizedBox(height: 10),
-          Text(
-            "You haven't made any food\nreservations. Start browsing surplus\nfood from nearby restaurants.",
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              height: 1.65,
-              color: const Color(0xFF64748B),
-            ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          "You haven't made any food\nreservations. Start browsing surplus\nfood from nearby restaurants.",
+          textAlign: TextAlign.center,
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            height: 1.65,
+            color: const Color(0xFF64748B),
           ),
-          const SizedBox(height: 36),
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton(
-              onPressed: onBrowse,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2563EB),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(28),
-                ),
+        ),
+        const SizedBox(height: 36),
+        SizedBox(
+          height: 52,
+          child: ElevatedButton(
+            onPressed: onBrowse,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2563EB),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28),
               ),
-              child: Text(
-                'Browse Food',
-                style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
-                ),
+            ),
+            child: Text(
+              'Browse Food',
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -210,7 +278,16 @@ class _EmptyState extends StatelessWidget {
 
 class _ReservationCard extends StatelessWidget {
   final Map<String, dynamic> data;
-  const _ReservationCard({required this.data});
+  final VoidCallback? onCancel;
+  final VoidCallback? onShowCode;
+  final VoidCallback? onFindSimilar;
+
+  const _ReservationCard({
+    required this.data,
+    this.onCancel,
+    this.onShowCode,
+    this.onFindSimilar,
+  });
 
   static const _statusColors = {
     'pending':   Color(0xFFF59E0B),
@@ -250,59 +327,155 @@ class _ReservationCard extends StatelessWidget {
           BoxShadow(color: Color(0x08000000), blurRadius: 8, offset: Offset(0, 2)),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(Icons.shopping_bag_outlined, color: color, size: 22),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  foodName,
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                    color: const Color(0xFF0F172A),
-                  ),
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  '$restaurant · $qty item${qty != 1 ? 's' : ''}',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: const Color(0xFF94A3B8),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              label,
-              style: GoogleFonts.inter(
-                fontWeight: FontWeight.w600,
-                fontSize: 11,
-                color: color,
+                child: Icon(Icons.shopping_bag_outlined, color: color, size: 22),
               ),
-            ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      foodName,
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        color: const Color(0xFF0F172A),
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '$restaurant · $qty item${qty != 1 ? 's' : ''}',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: const Color(0xFF94A3B8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
+                    color: color,
+                  ),
+                ),
+              ),
+            ],
           ),
+          if (onCancel != null || onShowCode != null || onFindSimilar != null) ...[
+            const SizedBox(height: 12),
+            _CardActions(
+              onCancel: onCancel,
+              onShowCode: onShowCode,
+              onFindSimilar: onFindSimilar,
+            ),
+          ],
         ],
       ),
     );
+  }
+}
+
+// ─── Card actions ─────────────────────────────────────────────────────────────
+
+class _CardActions extends StatelessWidget {
+  final VoidCallback? onCancel;
+  final VoidCallback? onShowCode;
+  final VoidCallback? onFindSimilar;
+
+  const _CardActions({
+    this.onCancel,
+    this.onShowCode,
+    this.onFindSimilar,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final children = <Widget>[];
+
+    if (onCancel != null) {
+      children.add(Expanded(
+        child: OutlinedButton(
+          onPressed: onCancel,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.red.shade700,
+            side: BorderSide(color: Colors.red.shade300),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10)),
+            padding: const EdgeInsets.symmetric(vertical: 10),
+          ),
+          child: Text(
+            'Cancel',
+            style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600, fontSize: 13),
+          ),
+        ),
+      ));
+    }
+
+    if (onShowCode != null) {
+      if (children.isNotEmpty) children.add(const SizedBox(width: 10));
+      children.add(Expanded(
+        child: ElevatedButton.icon(
+          onPressed: onShowCode,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF1A5C38),
+            foregroundColor: Colors.white,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10)),
+            padding: const EdgeInsets.symmetric(vertical: 10),
+          ),
+          icon: const Icon(Icons.qr_code_2_rounded, size: 16),
+          label: Text(
+            'Show Code',
+            style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600, fontSize: 13),
+          ),
+        ),
+      ));
+    }
+
+    if (onFindSimilar != null) {
+      if (children.isNotEmpty) children.add(const SizedBox(width: 10));
+      children.add(Expanded(
+        child: TextButton.icon(
+          onPressed: onFindSimilar,
+          style: TextButton.styleFrom(
+            foregroundColor: const Color(0xFF2563EB),
+            padding: const EdgeInsets.symmetric(vertical: 10),
+          ),
+          icon: const Icon(Icons.search, size: 16),
+          label: Text(
+            'Find similar listings',
+            style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600, fontSize: 13),
+          ),
+        ),
+      ));
+    }
+
+    return Row(children: children);
   }
 }
 

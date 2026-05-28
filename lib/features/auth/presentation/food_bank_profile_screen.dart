@@ -41,10 +41,11 @@ class _FoodBankProfileScreenState extends State<FoodBankProfileScreen> {
     }
     setState(() => _loading = true);
     try {
+      final phoneLocal = _phoneController.text.trim();
       await ApiService.instance.completeFoodBankProfile(
         organizationName: orgName,
         registrationNumber: _regNumberController.text.trim(),
-        phone: _phoneController.text.trim(),
+        phone: phoneLocal.isEmpty ? '' : '+20 $phoneLocal',
         location: _locationController.text.trim(),
       );
       if (!mounted) return;
@@ -176,9 +177,10 @@ class _FoodBankProfileScreenState extends State<FoodBankProfileScreen> {
                     _FormField(
                       label: 'Phone Number',
                       controller: _phoneController,
-                      hint: '+20 10 0000 0000',
+                      hint: '10 0000 0000',
                       icon: Icons.phone_outlined,
                       keyboardType: TextInputType.phone,
+                      prefixText: '+20 ',
                     ),
                     const SizedBox(height: 20),
 
@@ -268,6 +270,7 @@ class _FormField extends StatelessWidget {
   final String hint;
   final IconData icon;
   final TextInputType keyboardType;
+  final String? prefixText;
 
   const _FormField({
     required this.label,
@@ -275,6 +278,7 @@ class _FormField extends StatelessWidget {
     required this.hint,
     required this.icon,
     this.keyboardType = TextInputType.text,
+    this.prefixText,
   });
 
   @override
@@ -308,6 +312,12 @@ class _FormField extends StatelessWidget {
             ),
             prefixIcon:
                 Icon(icon, size: 18, color: const Color(0xFF94A3B8)),
+            prefixText: prefixText,
+            prefixStyle: GoogleFonts.inter(
+              fontWeight: FontWeight.w500,
+              fontSize: 15,
+              color: const Color(0xFF0F172A),
+            ),
             filled: true,
             fillColor: Colors.white,
             contentPadding: const EdgeInsets.symmetric(

@@ -5,8 +5,6 @@ class FoodListing {
   final String title;
   final String restaurant;
   final double distance;
-  final double originalPrice;
-  final double discountedPrice;
   final int itemsLeft;
   final String expiresIn;
   final Color imageBg;
@@ -15,15 +13,12 @@ class FoodListing {
   final String category;
   final String description;
   final List<String> tags;
-  final double restaurantRating;
 
   const FoodListing({
     this.listingId,
     required this.title,
     required this.restaurant,
     required this.distance,
-    required this.originalPrice,
-    required this.discountedPrice,
     required this.itemsLeft,
     required this.expiresIn,
     required this.imageBg,
@@ -32,7 +27,6 @@ class FoodListing {
     required this.category,
     required this.description,
     required this.tags,
-    required this.restaurantRating,
   });
 
   factory FoodListing.fromJson(Map<String, dynamic> json) {
@@ -65,8 +59,6 @@ class FoodListing {
       title: json['food_name'] as String? ?? '',
       restaurant: json['restaurant_name'] as String? ?? 'Restaurant',
       distance: (json['distance'] as num?)?.toDouble() ?? 0.0,
-      originalPrice: (json['original_price'] as num?)?.toDouble() ?? 0.0,
-      discountedPrice: (json['discounted_price'] as num?)?.toDouble() ?? 0.0,
       itemsLeft: (json['quantity'] as num?)?.toInt() ?? 0,
       expiresIn: expiresIn,
       imageBg: bg,
@@ -75,8 +67,6 @@ class FoodListing {
       category: json['category'] as String? ?? '',
       description: json['description'] as String? ?? '',
       tags: tags,
-      restaurantRating:
-          (json['restaurant_rating'] as num?)?.toDouble() ?? 0.0,
     );
   }
 

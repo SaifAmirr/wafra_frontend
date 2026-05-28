@@ -90,6 +90,17 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen>
     }
   }
 
+  void _showDetails(BuildContext context, Map<String, dynamic> r) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _RequestDetailsSheet(data: r),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final pendingCount =
@@ -168,6 +179,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen>
                         const SizedBox(height: 12),
                     itemBuilder: (_, idx) => _RequestCard(
                       data: items[idx],
+                      onTap: () => _showDetails(context, items[idx]),
                       onAccept: items[idx]['status'] == 'pending'
                           ? () => _accept(
                               items[idx]['reservation_id'] as int)
@@ -234,11 +246,16 @@ class _EmptyRequests extends StatelessWidget {
 
 class _RequestCard extends StatelessWidget {
   final Map<String, dynamic> data;
+  final VoidCallback? onTap;
   final VoidCallback? onAccept;
   final VoidCallback? onDecline;
 
-  const _RequestCard(
-      {required this.data, this.onAccept, this.onDecline});
+  const _RequestCard({
+    required this.data,
+    this.onTap,
+    this.onAccept,
+    this.onDecline,
+  });
 
   String _timeAgo(String? iso) {
     if (iso == null) return '';
@@ -298,26 +315,32 @@ class _RequestCard extends StatelessWidget {
         statusLabel = 'Pending';
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x06000000),
-            blurRadius: 8,
-            offset: Offset(0, 2),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x06000000),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header row
-            Row(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header row
+                Row(
               children: [
                 CircleAvatar(
                   radius: 20,
@@ -489,9 +512,219 @@ class _RequestCard extends StatelessWidget {
                   ),
                 ],
               ),
-            ],
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Request details sheet ───────────────────────────────────────────────────
+
+class _RequestDetailsSheet extends StatelessWidget {
+  final Map<String, dynamic> data;
+  const _RequestDetailsSheet({required this.data});
+
+  String _fmtPickup(String? iso) {
+    if (iso == null) return '—';
+    try {
+      final dt = DateTime.parse(iso);
+      final h = dt.hour > 12
+          ? dt.hour - 12
+          : dt.hour == 0
+              ? 12
+              : dt.hour;
+      final m = dt.minute.toString().padLeft(2, '0');
+      final ap = dt.hour >= 12 ? 'PM' : 'AM';
+      return '${dt.day}/${dt.month}/${dt.year}  ·  $h:$m $ap';
+    } catch (_) {
+      return '—';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final receiverName = data['receiver_name'] as String? ?? 'Unknown';
+    final receiverRole = data['receiver_role'] as String? ?? 'individual';
+    final receiverPhone = data['receiver_phone'] as String?;
+    final foodName = data['food_name'] as String? ?? '';
+    final qty = data['requested_quantity'];
+    final status = data['status'] as String? ?? 'pending';
+    final pickup = _fmtPickup(data['pickup_time'] as String?);
+    final created = _fmtPickup(data['created_at'] as String?);
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE2E8F0),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: const Color(0xFFF2F2F7),
+                  child: Text(
+                    receiverName.isNotEmpty
+                        ? receiverName[0].toUpperCase()
+                        : '?',
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 18,
+                      color: const Color(0xFF1A5C38),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        receiverName,
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                          color: const Color(0xFF0F172A),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: receiverRole == 'foodbank'
+                              ? const Color(0xFFF3E8FF)
+                              : const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          receiverRole == 'foodbank'
+                              ? 'Food Bank'
+                              : 'Individual',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 11,
+                            color: receiverRole == 'foodbank'
+                                ? const Color(0xFF7C3AED)
+                                : const Color(0xFF1D4ED8),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            const Divider(height: 1, color: Color(0xFFE2E8F0)),
+            const SizedBox(height: 14),
+            _DetailRow(
+              icon: Icons.restaurant_outlined,
+              label: 'Food',
+              value: '$foodName · Qty $qty',
+            ),
+            _DetailRow(
+              icon: Icons.access_time,
+              label: 'Pickup window',
+              value: pickup,
+            ),
+            _DetailRow(
+              icon: Icons.event_outlined,
+              label: 'Requested',
+              value: created,
+            ),
+            if (receiverPhone != null && receiverPhone.trim().isNotEmpty)
+              _DetailRow(
+                icon: Icons.phone_outlined,
+                label: 'Phone',
+                value: receiverPhone,
+              ),
+            _DetailRow(
+              icon: Icons.flag_outlined,
+              label: 'Status',
+              value: status,
+            ),
+            const SizedBox(height: 18),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF0F172A),
+                ),
+                child: Text(
+                  'Close',
+                  style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w600, fontSize: 14),
+                ),
+              ),
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _DetailRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 16, color: const Color(0xFF94A3B8)),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 100,
+            child: Text(
+              label,
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w500,
+                fontSize: 12,
+                color: const Color(0xFF94A3B8),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w500,
+                fontSize: 13,
+                color: const Color(0xFF0F172A),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

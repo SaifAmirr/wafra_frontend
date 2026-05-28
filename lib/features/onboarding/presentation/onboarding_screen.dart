@@ -1,5 +1,5 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wafra_frontend/features/auth/presentation/signup_screen.dart';
 
@@ -186,30 +186,27 @@ class _GreenSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Overlay card: 300/393 wide, 240/512 tall relative to top section
     final cardWidth = screenWidth * 0.763;
-    final cardHeight = height * 0.469;
+    final cardHeight = height * 0.55;
+    final logoSize = screenWidth * 0.17;
 
     return SizedBox(
       width: double.infinity,
       height: height,
-      child: Stack(
-        alignment: Alignment.center,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          // Frosted glass card with image placeholder
+          SvgPicture.asset(
+            'assets/images/splash_food_illustration.svg',
+            width: logoSize,
+            height: logoSize,
+          ),
           ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-              child: Container(
-                width: cardWidth,
-                height: cardHeight,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: _buildImageContent(cardWidth, cardHeight),
-              ),
+            borderRadius: BorderRadius.circular(20),
+            child: SizedBox(
+              width: cardWidth,
+              height: cardHeight,
+              child: _buildImageContent(cardWidth, cardHeight),
             ),
           ),
         ],

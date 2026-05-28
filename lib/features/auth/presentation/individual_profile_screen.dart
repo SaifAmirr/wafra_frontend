@@ -50,10 +50,11 @@ class _IndividualProfileScreenState extends State<IndividualProfileScreen> {
   Future<void> _submit() async {
     setState(() => _loading = true);
     try {
+      final phoneLocal = _phoneController.text.trim();
       await ApiService.instance.completeIndividualProfile(
         firstName: _firstNameController.text.trim(),
         lastName: _lastNameController.text.trim(),
-        phone: _phoneController.text.trim(),
+        phone: phoneLocal.isEmpty ? '' : '+20 $phoneLocal',
         birthdate: _birthdate != null
             ? '${_birthdate!.year}-${_birthdate!.month.toString().padLeft(2, '0')}-${_birthdate!.day.toString().padLeft(2, '0')}'
             : null,
@@ -178,9 +179,10 @@ class _IndividualProfileScreenState extends State<IndividualProfileScreen> {
                     _FormField(
                       label: 'Phone Number',
                       controller: _phoneController,
-                      hint: '+1 (555) 000-0000',
+                      hint: '10 0000 0000',
                       icon: Icons.phone_outlined,
                       keyboardType: TextInputType.phone,
+                      prefixText: '+20 ',
                     ),
                     const SizedBox(height: 20),
 
@@ -293,6 +295,7 @@ class _FormField extends StatelessWidget {
   final String hint;
   final IconData icon;
   final TextInputType keyboardType;
+  final String? prefixText;
 
   const _FormField({
     required this.label,
@@ -300,6 +303,7 @@ class _FormField extends StatelessWidget {
     required this.hint,
     required this.icon,
     this.keyboardType = TextInputType.text,
+    this.prefixText,
   });
 
   @override
@@ -332,6 +336,12 @@ class _FormField extends StatelessWidget {
               color: const Color(0xFFCBD5E1),
             ),
             prefixIcon: Icon(icon, size: 18, color: const Color(0xFF94A3B8)),
+            prefixText: prefixText,
+            prefixStyle: GoogleFonts.inter(
+              fontWeight: FontWeight.w500,
+              fontSize: 15,
+              color: const Color(0xFF0F172A),
+            ),
             filled: true,
             fillColor: Colors.white,
             contentPadding: const EdgeInsets.symmetric(

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:wafra_frontend/core/network/api_service.dart';
 import 'package:wafra_frontend/features/onboarding/presentation/splash_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await ApiService.init();
   runApp(const WafraApp());
 }
 

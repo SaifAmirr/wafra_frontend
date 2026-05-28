@@ -234,7 +234,9 @@ class _HomeTab extends StatefulWidget {
 }
 
 class _HomeTabState extends State<_HomeTab> {
+  Map<String, dynamic>? _me;
   List<_Listing> _listings = [];
+  List<Map<String, dynamic>> _reservations = [];
   bool _loading = false;
 
   @override
@@ -246,33 +248,154 @@ class _HomeTabState extends State<_HomeTab> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final raw = await ApiService.instance.getMyListings();
+      final results = await Future.wait([
+        ApiService.instance.getMe(),
+        ApiService.instance.getMyListings(),
+        ApiService.instance.getRestaurantReservations(),
+      ]);
       if (!mounted) return;
-      setState(() => _listings = raw
-          .map((j) => _listingFromJson(j as Map<String, dynamic>))
-          .toList());
+      setState(() {
+        _me = results[0] as Map<String, dynamic>;
+        _listings = (results[1] as List)
+            .map((j) => _listingFromJson(j as Map<String, dynamic>))
+            .toList();
+        _reservations = (results[2] as List).cast<Map<String, dynamic>>();
+      });
     } catch (_) {
-      // keep empty on error
+      // keep current state on error
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
+  String _restaurantName() {
+    final profile = _me?['profile'] as Map<String, dynamic>?;
+    final fromProfile = profile?['restaurant_name'] as String?;
+    if (fromProfile != null && fromProfile.isNotEmpty) return fromProfile;
+    final user = _me?['user'] as Map<String, dynamic>?;
+    return user?['username'] as String? ?? 'Restaurant';
+  }
+
+  String _greeting() {
+    final h = DateTime.now().hour;
+    if (h < 12) return 'Good Morning,';
+    if (h < 17) return 'Good Afternoon,';
+    return 'Good Evening,';
+  }
+
+  int get _mealsDonated => _reservations
+      .where((r) => r['status'] == 'completed')
+      .fold<int>(
+          0, (sum, r) => sum + ((r['requested_quantity'] as int?) ?? 0));
+
+  int get _activeListings =>
+      _listings.where((l) => l.status == _ListingStatus.active).length;
+
+  int get _pendingRequests =>
+      _reservations.where((r) => r['status'] == 'pending').length;
+
+  List<_ActivityItem> _recentActivities() {
+    final sorted = [..._reservations]..sort((a, b) {
+      final aTime = (a['updated_at'] as String?) ??
+          (a['created_at'] as String?) ??
+          '';
+      final bTime = (b['updated_at'] as String?) ??
+          (b['created_at'] as String?) ??
+          '';
+      return bTime.compareTo(aTime);
+    });
+    return sorted.take(5).map(_activityFromReservation).toList();
+  }
+
+  _ActivityItem _activityFromReservation(Map<String, dynamic> r) {
+    final status = r['status'] as String? ?? 'pending';
+    final receiver = r['receiver_name'] as String? ?? 'Someone';
+    final food = r['food_name'] as String? ?? 'a listing';
+    final qty = r['requested_quantity'] as int? ?? 0;
+    final ts = (r['updated_at'] as String?) ?? (r['created_at'] as String?);
+    final ago = _timeAgo(ts);
+
+    switch (status) {
+      case 'completed':
+        return _ActivityItem(
+          icon: Icons.volunteer_activism_rounded,
+          iconBg: const Color(0xFFEFF6FF),
+          iconColor: const Color(0xFF3B82F6),
+          title: 'Donation Picked Up',
+          subtitle: '${qty}x $food · $receiver',
+          time: ago,
+        );
+      case 'accepted':
+        return _ActivityItem(
+          icon: Icons.check_circle_rounded,
+          iconBg: const Color(0xFFECFDF5),
+          iconColor: const Color(0xFF1A5C38),
+          title: 'Request Confirmed',
+          subtitle: '$receiver · ${qty}x $food',
+          time: ago,
+        );
+      case 'declined':
+      case 'cancelled':
+        return _ActivityItem(
+          icon: Icons.close_rounded,
+          iconBg: const Color(0xFFFEF2F2),
+          iconColor: const Color(0xFFEF4444),
+          title:
+              status == 'declined' ? 'Request Declined' : 'Request Cancelled',
+          subtitle: '$receiver · ${qty}x $food',
+          time: ago,
+        );
+      default:
+        return _ActivityItem(
+          icon: Icons.inbox_rounded,
+          iconBg: const Color(0xFFFFF7ED),
+          iconColor: const Color(0xFFF59E0B),
+          title: 'New Pickup Request',
+          subtitle: '$receiver · ${qty}x $food',
+          time: ago,
+        );
+    }
+  }
+
+  static String _timeAgo(String? iso) {
+    if (iso == null) return '';
+    try {
+      final diff = DateTime.now().difference(DateTime.parse(iso));
+      if (diff.inMinutes < 1) return 'just now';
+      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+      if (diff.inHours < 24) return '${diff.inHours}h ago';
+      if (diff.inDays < 7) return '${diff.inDays}d ago';
+      return '${(diff.inDays / 7).floor()}w ago';
+    } catch (_) {
+      return '';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 110),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const _Header(),
-          const SizedBox(height: 24),
-          const _SustainabilitySection(),
-          const SizedBox(height: 24),
-          _ActiveListingsSection(listings: _listings, loading: _loading),
-          const SizedBox(height: 24),
-          const _RecentActivitySection(),
-        ],
+    final activities = _recentActivities();
+    return RefreshIndicator(
+      onRefresh: _load,
+      color: const Color(0xFF1A5C38),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 110),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _Header(greeting: _greeting(), name: _restaurantName()),
+            const SizedBox(height: 24),
+            _SustainabilitySection(
+              mealsDonated: _mealsDonated,
+              activeListings: _activeListings,
+              pendingRequests: _pendingRequests,
+            ),
+            const SizedBox(height: 24),
+            _ActiveListingsSection(listings: _listings, loading: _loading),
+            const SizedBox(height: 24),
+            _RecentActivitySection(items: activities),
+          ],
+        ),
       ),
     );
   }
@@ -281,7 +404,10 @@ class _HomeTabState extends State<_HomeTab> {
 // ─── Header ───────────────────────────────────────────────────────────────────
 
 class _Header extends StatelessWidget {
-  const _Header();
+  final String greeting;
+  final String name;
+
+  const _Header({required this.greeting, required this.name});
 
   @override
   Widget build(BuildContext context) {
@@ -297,27 +423,31 @@ class _Header extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Good Morning,',
-              style: GoogleFonts.inter(
-                fontSize: 13,
-                color: const Color(0xFF94A3B8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                greeting,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: const Color(0xFF94A3B8),
+                ),
               ),
-            ),
-            Text(
-              'Green Table Bistro',
-              style: GoogleFonts.inter(
-                fontWeight: FontWeight.w700,
-                fontSize: 17,
-                color: const Color(0xFF0F172A),
+              Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 17,
+                  color: const Color(0xFF0F172A),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-        const Spacer(),
+        const SizedBox(width: 8),
         Container(
           width: 40,
           height: 40,
@@ -626,7 +756,15 @@ class _DashedBorderPainter extends CustomPainter {
 // ─── Sustainability impact section ────────────────────────────────────────────
 
 class _SustainabilitySection extends StatelessWidget {
-  const _SustainabilitySection();
+  final int mealsDonated;
+  final int activeListings;
+  final int pendingRequests;
+
+  const _SustainabilitySection({
+    required this.mealsDonated,
+    required this.activeListings,
+    required this.pendingRequests,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -646,20 +784,20 @@ class _SustainabilitySection extends StatelessWidget {
           children: [
             _ImpactCard(
               icon: Icons.eco_rounded,
-              value: '428',
-              label: 'MEALS\nSAVED',
+              value: '$mealsDonated',
+              label: 'MEALS\nDONATED',
             ),
             const SizedBox(width: 10),
             _ImpactCard(
-              icon: Icons.cloud_outlined,
-              value: '1.2t',
-              label: 'CO2\nREDUCED',
+              icon: Icons.local_offer_outlined,
+              value: '$activeListings',
+              label: 'ACTIVE\nLISTINGS',
             ),
             const SizedBox(width: 10),
             _ImpactCard(
-              icon: Icons.favorite_rounded,
-              value: '350',
-              label: 'PEOPLE\nFED',
+              icon: Icons.inbox_outlined,
+              value: '$pendingRequests',
+              label: 'PENDING\nREQUESTS',
             ),
           ],
         ),
@@ -746,35 +884,10 @@ class _ActivityItem {
   });
 }
 
-const _activities = [
-  _ActivityItem(
-    icon: Icons.volunteer_activism_rounded,
-    iconBg: Color(0xFFEFF6FF),
-    iconColor: Color(0xFF3B82F6),
-    title: 'Donation Picked Up',
-    subtitle: '12kg of surplus grains by FoodBank Local',
-    time: 'Yesterday',
-  ),
-  _ActivityItem(
-    icon: Icons.star_rounded,
-    iconBg: Color(0xFFECFDF5),
-    iconColor: Color(0xFF1A5C38),
-    title: 'New Achievement!',
-    subtitle: '"Zero Waste Hero" badge earned',
-    time: '2d ago',
-  ),
-  _ActivityItem(
-    icon: Icons.group_rounded,
-    iconBg: Color(0xFFF5F3FF),
-    iconColor: Color(0xFF7C3AED),
-    title: '15 New Followers',
-    subtitle: 'Community members tracking your listings',
-    time: '1d ago',
-  ),
-];
-
 class _RecentActivitySection extends StatelessWidget {
-  const _RecentActivitySection();
+  final List<_ActivityItem> items;
+
+  const _RecentActivitySection({required this.items});
 
   @override
   Widget build(BuildContext context) {
@@ -802,15 +915,31 @@ class _RecentActivitySection extends StatelessWidget {
               ),
             ],
           ),
-          child: Column(
-            children: [
-              for (int i = 0; i < _activities.length; i++) ...[
-                _ActivityRow(item: _activities[i]),
-                if (i < _activities.length - 1)
-                  const Divider(height: 1, color: Color(0xFFF1F5F9), indent: 56),
-              ],
-            ],
-          ),
+          child: items.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 24),
+                  child: Center(
+                    child: Text(
+                      'No activity yet.',
+                      style: GoogleFonts.inter(
+                          fontSize: 13,
+                          color: const Color(0xFF94A3B8)),
+                    ),
+                  ),
+                )
+              : Column(
+                  children: [
+                    for (int i = 0; i < items.length; i++) ...[
+                      _ActivityRow(item: items[i]),
+                      if (i < items.length - 1)
+                        const Divider(
+                            height: 1,
+                            color: Color(0xFFF1F5F9),
+                            indent: 56),
+                    ],
+                  ],
+                ),
         ),
       ],
     );

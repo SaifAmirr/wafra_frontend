@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'http_client.dart';
+
+const _kTokenKey = 'auth_token';
 
 class ApiService {
   ApiService._() : _client = buildHttpClient();
@@ -16,6 +19,12 @@ class ApiService {
   String? get token => _token;
   bool get isLoggedIn => _token != null;
 
+  /// Call once at app startup (before runApp) to restore a persisted token.
+  static Future<void> init() async {
+    final prefs = await SharedPreferences.getInstance();
+    instance._token = prefs.getString(_kTokenKey);
+  }
+
   Map<String, String> get _authHeaders => {
         'Content-Type': 'application/json',
         if (_token != null) 'Authorization': 'Bearer $_token',
@@ -24,7 +33,10 @@ class ApiService {
   // Extracts a refreshed JWT from the JSON body whenever the server provides one.
   void _updateToken(Map<String, dynamic> body) {
     final t = body['token'] as String?;
-    if (t != null) _token = t;
+    if (t != null) {
+      _token = t;
+      SharedPreferences.getInstance().then((prefs) => prefs.setString(_kTokenKey, t));
+    }
   }
 
   Future<Map<String, dynamic>> _handle(http.Response res) async {
@@ -66,6 +78,8 @@ class ApiService {
     await _client.post(Uri.parse('$_base/auth/logout'),
         headers: _authHeaders);
     _token = null;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kTokenKey);
   }
 
   Future<Map<String, dynamic>> chooseRole(String role) async {

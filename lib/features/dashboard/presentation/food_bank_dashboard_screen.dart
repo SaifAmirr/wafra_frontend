@@ -22,17 +22,20 @@ class FoodBankDashboardScreen extends StatefulWidget {
 class _FoodBankDashboardScreenState extends State<FoodBankDashboardScreen> {
   int _tab = 0;
 
+  void _goToBrowse() => setState(() => _tab = 1);
+  void _goToOrders() => setState(() => _tab = 2);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       body: IndexedStack(
         index: _tab,
-        children: const [
-          _HomeTab(),
-          _BrowseTab(),
-          _OrdersTab(),
-          ProfileScreen(),
+        children: [
+          _HomeTab(onGoBrowse: _goToBrowse, onGoOrders: _goToOrders),
+          const _BrowseTab(),
+          _OrdersTab(onGoBrowse: _goToBrowse),
+          const ProfileScreen(),
         ],
       ),
       bottomNavigationBar: _BottomNav(
@@ -78,23 +81,57 @@ class _BottomNav extends StatelessWidget {
         surfaceTintColor: Colors.transparent,
         shadowColor: const Color(0x1A000000),
         elevation: 8,
-        destinations: const [
-          NavigationDestination(
+        destinations: [
+          const NavigationDestination(
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home),
             label: 'Home',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.search_outlined),
             selectedIcon: Icon(Icons.search),
             label: 'Browse',
           ),
           NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long),
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                const Icon(Icons.receipt_long_outlined),
+                Positioned(
+                  top: -2,
+                  right: -3,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            selectedIcon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                const Icon(Icons.receipt_long),
+                Positioned(
+                  top: -2,
+                  right: -3,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ],
+            ),
             label: 'Orders',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.person_outline),
             selectedIcon: Icon(Icons.person),
             label: 'Profile',
@@ -108,7 +145,10 @@ class _BottomNav extends StatelessWidget {
 // ─── Tab 0: Home dashboard ────────────────────────────────────────────────────
 
 class _HomeTab extends StatefulWidget {
-  const _HomeTab();
+  final VoidCallback? onGoBrowse;
+  final VoidCallback? onGoOrders;
+
+  const _HomeTab({this.onGoBrowse, this.onGoOrders});
 
   @override
   State<_HomeTab> createState() => _HomeTabState();
@@ -117,7 +157,7 @@ class _HomeTab extends StatefulWidget {
 class _HomeTabState extends State<_HomeTab> {
   Map<String, dynamic>? _me;
   List<FoodListing> _available = [];
-  List<Map<String, dynamic>> _activeOrders = [];
+  List<Map<String, dynamic>> _allReservations = [];
   bool _loading = false;
 
   @override
@@ -143,16 +183,42 @@ class _HomeTabState extends State<_HomeTab> {
             .map(FoodListing.fromJson)
             .take(5)
             .toList();
-        final orders = (results[2] as List).cast<Map<String, dynamic>>();
-        _activeOrders = orders
-            .where((r) =>
-                r['status'] == 'pending' || r['status'] == 'accepted')
-            .toList();
+        _allReservations = (results[2] as List).cast<Map<String, dynamic>>();
       });
     } catch (_) {
       // show empty
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  List<Map<String, dynamic>> get _activeOrders => _allReservations
+      .where((r) => r['status'] == 'pending' || r['status'] == 'accepted')
+      .toList();
+
+  int get _mealsCollected => _allReservations
+      .where((r) => r['status'] == 'completed')
+      .fold<int>(
+          0, (sum, r) => sum + ((r['requested_quantity'] as int?) ?? 0));
+
+  int get _restaurantCount => _allReservations
+      .map((r) => (r['restaurant_name'] as String? ?? '').trim())
+      .where((s) => s.isNotEmpty)
+      .toSet()
+      .length;
+
+  Future<void> _openDetail(FoodListing listing) async {
+    final reserved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => FoodListingDetailScreen(listing: listing),
+      ),
+    );
+    if (!mounted) return;
+    if (reserved == true) {
+      widget.onGoOrders?.call();
+      _load();
+    } else {
+      _load();
     }
   }
 
@@ -228,7 +294,7 @@ class _HomeTabState extends State<_HomeTab> {
                     children: [
                       _ImpactCard(
                           label: 'Meals Collected',
-                          value: '—',
+                          value: '$_mealsCollected',
                           icon: Icons.kitchen_outlined),
                       const SizedBox(width: 10),
                       _ImpactCard(
@@ -238,7 +304,7 @@ class _HomeTabState extends State<_HomeTab> {
                       const SizedBox(width: 10),
                       _ImpactCard(
                           label: 'Restaurants',
-                          value: '—',
+                          value: '$_restaurantCount',
                           icon: Icons.storefront_outlined),
                     ],
                   ),
@@ -287,12 +353,7 @@ class _HomeTabState extends State<_HomeTab> {
                 delegate: SliverChildBuilderDelegate(
                   (_, i) => _CompactListingCard(
                     listing: _available[i],
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => FoodListingDetailScreen(
-                            listing: _available[i]),
-                      ),
-                    ),
+                    onTap: () => _openDetail(_available[i]),
                   ),
                   childCount: _available.length,
                 ),
@@ -548,12 +609,15 @@ class _BrowseTab extends StatefulWidget {
 
 class _BrowseTabState extends State<_BrowseTab> {
   List<FoodListing> _listings = [];
+  Map<String, dynamic>? _me;
+  final Map<int, int> _quantities = {};
   bool _loading = false;
+  bool _reserving = false;
   String _search = '';
-  String _category = 'All';
+  String _category = 'All Items';
 
   static const _cats = [
-    'All',
+    'All Items',
     'Cooked Meals',
     'Bakery',
     'Packaged',
@@ -569,17 +633,64 @@ class _BrowseTabState extends State<_BrowseTab> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final raw = await ApiService.instance.getListings(
-        category: _category == 'All' ? null : _category,
-        search: _search.isEmpty ? null : _search,
-      );
+      final results = await Future.wait([
+        ApiService.instance.getListings(
+          category: _category == 'All Items' ? null : _category,
+          search: _search.isEmpty ? null : _search,
+        ),
+        ApiService.instance.getMe(),
+      ]);
       if (!mounted) return;
-      setState(() =>
-          _listings = raw.cast<Map<String, dynamic>>().map(FoodListing.fromJson).toList());
+      setState(() {
+        _listings = (results[0] as List)
+            .cast<Map<String, dynamic>>()
+            .map(FoodListing.fromJson)
+            .toList();
+        _me = results[1] as Map<String, dynamic>;
+        _quantities.removeWhere(
+            (id, _) => !_listings.any((l) => l.listingId == id));
+      });
     } catch (_) {
-      // show empty
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  int get _selectedCount => _quantities.values.where((q) => q > 0).length;
+
+  String _orgName() {
+    final user = _me?['user'] as Map<String, dynamic>?;
+    return user?['username'] as String? ?? 'Food Bank';
+  }
+
+  Future<void> _bulkReserve() async {
+    final selected =
+        _quantities.entries.where((e) => e.value > 0).toList();
+    if (selected.isEmpty) return;
+    setState(() => _reserving = true);
+    try {
+      await Future.wait(
+        selected.map(
+            (e) => ApiService.instance.createReservation(e.key, e.value)),
+      );
+      if (!mounted) return;
+      setState(() => _quantities.clear());
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${selected.length} reservation(s) submitted!'),
+          backgroundColor: _kPurple,
+        ),
+      );
+      _load();
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(e.message),
+            backgroundColor: Colors.red.shade700),
+      );
+    } finally {
+      if (mounted) setState(() => _reserving = false);
     }
   }
 
@@ -587,17 +698,66 @@ class _BrowseTabState extends State<_BrowseTab> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 22,
+                  backgroundColor: _kPurpleLight,
+                  child: const Icon(Icons.account_balance_outlined,
+                      color: _kPurple, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Food Bank Partner',
+                        style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: const Color(0xFF94A3B8)),
+                      ),
+                      Text(
+                        _orgName(),
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 17,
+                          color: const Color(0xFF0F172A),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: const Icon(Icons.notifications_outlined,
+                      size: 20, color: Color(0xFF0F172A)),
+                ),
+              ],
+            ),
+          ),
+
           // Search bar
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: TextField(
               onChanged: (v) {
                 _search = v;
                 _load();
               },
               decoration: InputDecoration(
-                hintText: 'Search food, area…',
+                hintText: 'Search surplus food...',
                 hintStyle: GoogleFonts.inter(
                     fontSize: 14, color: const Color(0xFF94A3B8)),
                 prefixIcon: const Icon(Icons.search,
@@ -622,9 +782,10 @@ class _BrowseTabState extends State<_BrowseTab> {
               ),
             ),
           ),
+
           // Category chips
           SizedBox(
-            height: 44,
+            height: 40,
             child: ListView.separated(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               scrollDirection: Axis.horizontal,
@@ -665,8 +826,36 @@ class _BrowseTabState extends State<_BrowseTab> {
               },
             ),
           ),
-          const SizedBox(height: 8),
-          // List
+          const SizedBox(height: 16),
+
+          // "Available Listings" + selected count
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+            child: Row(
+              children: [
+                Text(
+                  'Available Listings',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 18,
+                    color: const Color(0xFF0F172A),
+                  ),
+                ),
+                const Spacer(),
+                if (_selectedCount > 0)
+                  Text(
+                    '$_selectedCount item${_selectedCount == 1 ? '' : 's'} selected',
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: _kPurple,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+          // Cards list + floating bulk reserve button
           Expanded(
             child: _loading
                 ? const Center(
@@ -680,16 +869,69 @@ class _BrowseTabState extends State<_BrowseTab> {
                               color: const Color(0xFF8E8E93)),
                         ),
                       )
-                    : RefreshIndicator(
-                        onRefresh: _load,
-                        color: _kPurple,
-                        child: ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                          itemCount: _listings.length,
-                          itemBuilder: (_, i) => _BrowseCard(
-                            listing: _listings[i],
+                    : Stack(
+                        children: [
+                          RefreshIndicator(
+                            onRefresh: _load,
+                            color: _kPurple,
+                            child: ListView.builder(
+                              padding: EdgeInsets.fromLTRB(
+                                  16, 0, 16, _selectedCount > 0 ? 90 : 16),
+                              itemCount: _listings.length,
+                              itemBuilder: (_, i) {
+                                final l = _listings[i];
+                                final id = l.listingId ?? i;
+                                return _BrowseCard(
+                                  listing: l,
+                                  qty: _quantities[id] ?? 0,
+                                  onQtyChanged: (q) =>
+                                      setState(() => _quantities[id] = q),
+                                );
+                              },
+                            ),
                           ),
-                        ),
+                          if (_selectedCount > 0)
+                            Positioned(
+                              bottom: 16,
+                              left: 16,
+                              right: 16,
+                              child: SizedBox(
+                                height: 56,
+                                child: ElevatedButton.icon(
+                                  onPressed:
+                                      _reserving ? null : _bulkReserve,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: _kPurple,
+                                    foregroundColor: Colors.white,
+                                    elevation: 6,
+                                    shadowColor:
+                                        _kPurple.withValues(alpha: 0.4),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(28)),
+                                  ),
+                                  icon: _reserving
+                                      ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Colors.white))
+                                      : const Icon(
+                                          Icons.volunteer_activism,
+                                          size: 20),
+                                  label: Text(
+                                    _reserving
+                                        ? 'Reserving...'
+                                        : 'Reserve Selected ($_selectedCount item${_selectedCount == 1 ? '' : 's'})',
+                                    style: GoogleFonts.inter(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 16),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
           ),
         ],
@@ -698,174 +940,200 @@ class _BrowseTabState extends State<_BrowseTab> {
   }
 }
 
-class _BrowseCard extends StatefulWidget {
+class _BrowseCard extends StatelessWidget {
   final FoodListing listing;
-  const _BrowseCard({required this.listing});
+  final int qty;
+  final ValueChanged<int> onQtyChanged;
 
-  @override
-  State<_BrowseCard> createState() => _BrowseCardState();
-}
+  const _BrowseCard({
+    required this.listing,
+    required this.qty,
+    required this.onQtyChanged,
+  });
 
-class _BrowseCardState extends State<_BrowseCard> {
-  int _qty = 1;
-  bool _reserving = false;
-
-  Future<void> _reserve() async {
-    if (widget.listing.listingId == null) return;
-    setState(() => _reserving = true);
-    try {
-      await ApiService.instance.createReservation(
-          widget.listing.listingId!, _qty);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Reservation submitted!'),
-            backgroundColor: Color(0xFF1A5C38),
-          ),
-        );
-      }
-    } on ApiException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(e.message),
-              backgroundColor: Colors.red.shade700),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _reserving = false);
+  static String _unit(String category) {
+    switch (category.toLowerCase()) {
+      case 'bakery':
+        return 'packs';
+      case 'cooked meals':
+      case 'meals':
+        return 'boxes';
+      case 'dairy':
+        return 'units';
+      case 'beverages':
+        return 'bottles';
+      default:
+        return 'items';
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final l = widget.listing;
-    return Container(
+    final l = listing;
+    final selected = qty > 0;
+    final isHighDemand = l.itemsLeft <= 3 && l.itemsLeft > 0;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(
+          color: selected ? _kPurple : const Color(0xFFE2E8F0),
+          width: selected ? 1.5 : 1,
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: l.imageBg,
-                  borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Food icon thumbnail
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: l.imageBg,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child:
+                      Icon(l.imageIcon, color: l.imageIconColor, size: 32),
                 ),
-                child: Icon(l.imageIcon, color: l.imageIconColor, size: 22),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(width: 12),
+                // Info column
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              l.title,
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                                color: const Color(0xFF0F172A),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: isHighDemand
+                                  ? const Color(0xFFFEF3C7)
+                                  : const Color(0xFFDCFCE7),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              isHighDemand ? 'HIGH DEMAND' : 'ACTIVE',
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 10,
+                                letterSpacing: 0.5,
+                                color: isHighDemand
+                                    ? const Color(0xFFD97706)
+                                    : const Color(0xFF16A34A),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        l.restaurant,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: const Color(0xFF64748B),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.access_time_outlined,
+                              size: 12, color: Color(0xFF94A3B8)),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Expires in ${l.expiresIn}',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: const Color(0xFF94A3B8),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            const Divider(height: 1, color: Color(0xFFF1F5F9)),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'QUANTITY',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 10,
+                          letterSpacing: 0.8,
+                          color: const Color(0xFF94A3B8),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${l.itemsLeft} ${_unit(l.category)} available',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          color: const Color(0xFF0F172A),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Row(
                   children: [
-                    Text(
-                      l.title,
-                      style: GoogleFonts.inter(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        color: const Color(0xFF0F172A),
+                    _QtyBtn(
+                      icon: Icons.remove,
+                      onTap: qty > 0 ? () => onQtyChanged(qty - 1) : null,
+                    ),
+                    SizedBox(
+                      width: 36,
+                      child: Text(
+                        '$qty',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                          color: const Color(0xFF0F172A),
+                        ),
                       ),
                     ),
-                    Text(
-                      l.restaurant,
-                      style: GoogleFonts.inter(
-                        fontWeight: FontWeight.w400,
-                        fontSize: 12,
-                        color: const Color(0xFF8E8E93),
-                      ),
+                    _QtyBtn(
+                      icon: Icons.add,
+                      onTap: qty < l.itemsLeft
+                          ? () => onQtyChanged(qty + 1)
+                          : null,
                     ),
                   ],
                 ),
-              ),
-              Text(
-                l.expiresIn,
-                style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w500,
-                  fontSize: 12,
-                  color: const Color(0xFFF59E0B),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Text(
-                '${l.itemsLeft} available',
-                style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w500,
-                  fontSize: 13,
-                  color: const Color(0xFF64748B),
-                ),
-              ),
-              const Spacer(),
-              // Quantity stepper
-              Row(
-                children: [
-                  _QtyBtn(
-                    icon: Icons.remove,
-                    onTap: _qty > 1
-                        ? () => setState(() => _qty--)
-                        : null,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '$_qty',
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                      color: const Color(0xFF0F172A),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  _QtyBtn(
-                    icon: Icons.add,
-                    onTap: _qty < l.itemsLeft
-                        ? () => setState(() => _qty++)
-                        : null,
-                  ),
-                ],
-              ),
-              const SizedBox(width: 12),
-              SizedBox(
-                height: 36,
-                child: ElevatedButton(
-                  onPressed: _reserving ? null : _reserve,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _kPurple,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14),
-                  ),
-                  child: _reserving
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white))
-                      : Text(
-                          'Reserve',
-                          style: GoogleFonts.inter(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13),
-                        ),
-                ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -902,7 +1170,8 @@ class _QtyBtn extends StatelessWidget {
 // ─── Tab 2: Orders ────────────────────────────────────────────────────────────
 
 class _OrdersTab extends StatefulWidget {
-  const _OrdersTab();
+  final VoidCallback? onGoBrowse;
+  const _OrdersTab({this.onGoBrowse});
 
   @override
   State<_OrdersTab> createState() => _OrdersTabState();
@@ -1028,24 +1297,31 @@ class _OrdersTabState extends State<_OrdersTab>
                     itemCount: items.length,
                     separatorBuilder: (_, _) =>
                         const SizedBox(height: 12),
-                    itemBuilder: (_, idx) => _FoodBankOrderCard(
-                      data: items[idx],
-                      onCancel: items[idx]['status'] == 'pending'
-                          ? () => _cancel(
-                              items[idx]['reservation_id'] as int)
-                          : null,
-                      onShowCode: items[idx]['status'] == 'accepted'
-                          ? () => Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => PickupTicketScreen(
-                                    reservationId:
-                                        items[idx]['reservation_id']
-                                            as int,
+                    itemBuilder: (_, idx) {
+                      final s = items[idx]['status'] as String? ?? '';
+                      return _FoodBankOrderCard(
+                        data: items[idx],
+                        onCancel: s == 'pending'
+                            ? () => _cancel(
+                                items[idx]['reservation_id'] as int)
+                            : null,
+                        onShowCode: s == 'accepted'
+                            ? () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => PickupTicketScreen(
+                                      reservationId:
+                                          items[idx]['reservation_id']
+                                              as int,
+                                    ),
                                   ),
-                                ),
-                              )
-                          : null,
-                    ),
+                                )
+                            : null,
+                        onFindAlternatives:
+                            (s == 'declined' || s == 'cancelled')
+                                ? widget.onGoBrowse
+                                : null,
+                      );
+                    },
                   );
                 }),
               ),
@@ -1058,8 +1334,13 @@ class _FoodBankOrderCard extends StatelessWidget {
   final Map<String, dynamic> data;
   final VoidCallback? onCancel;
   final VoidCallback? onShowCode;
-  const _FoodBankOrderCard(
-      {required this.data, this.onCancel, this.onShowCode});
+  final VoidCallback? onFindAlternatives;
+  const _FoodBankOrderCard({
+    required this.data,
+    this.onCancel,
+    this.onShowCode,
+    this.onFindAlternatives,
+  });
 
   String _fmtDate(String? iso) {
     if (iso == null) return '';
@@ -1179,7 +1460,9 @@ class _FoodBankOrderCard extends StatelessWidget {
                 ],
               ],
             ),
-            if (onShowCode != null || onCancel != null) ...[
+            if (onShowCode != null ||
+                onCancel != null ||
+                onFindAlternatives != null) ...[
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -1219,6 +1502,23 @@ class _FoodBankOrderCard extends StatelessWidget {
                           'Show Code',
                           style: GoogleFonts.inter(
                               fontWeight: FontWeight.w600, fontSize: 14),
+                        ),
+                      ),
+                    ),
+                  if (onFindAlternatives != null)
+                    Expanded(
+                      child: TextButton.icon(
+                        onPressed: onFindAlternatives,
+                        style: TextButton.styleFrom(
+                          foregroundColor: _kPurple,
+                          padding:
+                              const EdgeInsets.symmetric(vertical: 10),
+                        ),
+                        icon: const Icon(Icons.search, size: 16),
+                        label: Text(
+                          'Find alternatives',
+                          style: GoogleFonts.inter(
+                              fontWeight: FontWeight.w600, fontSize: 13),
                         ),
                       ),
                     ),

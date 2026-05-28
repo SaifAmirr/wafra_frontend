@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wafra_frontend/features/onboarding/presentation/onboarding_screen.dart';
 
@@ -47,13 +48,11 @@ class _SplashScreenState extends State<SplashScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                SizedBox(
+                SvgPicture.asset(
+                  'assets/images/splash_food_illustration.svg',
                   width: screenWidth * 0.60,
                   height: screenHeight * 0.24,
-                  child: Image.asset(
-                    'assets/images/splash_food_illustration-3e592e.png',
-                    fit: BoxFit.contain,
-                  ),
+                  fit: BoxFit.contain,
                 ),
                 SizedBox(height: screenHeight * 0.019),
                 Text(

@@ -30,6 +30,10 @@ class _FoodListingDetailScreenState extends State<FoodListingDetailScreen> {
           backgroundColor: Color(0xFF1A5C38),
         ),
       );
+      // Signal the caller (e.g. ExploreScreen) that a reservation was made so it
+      // can switch to the Reservations / Orders tab.
+      Navigator.of(context).pop(true);
+      return;
     } on ApiException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -55,7 +59,6 @@ class _FoodListingDetailScreenState extends State<FoodListingDetailScreen> {
   Widget build(BuildContext context) {
     final listing = widget.listing;
     final topPadding = MediaQuery.of(context).padding.top;
-    final isFree = listing.discountedPrice == 0;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -199,38 +202,9 @@ class _FoodListingDetailScreenState extends State<FoodListingDetailScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Price row
+                      // Availability strip (quantity left + pickup window)
                       Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Text(
-                            isFree
-                                ? 'Free'
-                                : '\$${listing.discountedPrice.toStringAsFixed(2)}',
-                            style: GoogleFonts.inter(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 28,
-                              color: const Color(0xFF1A5C38),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          if (!isFree)
-                            Padding(
-                              padding:
-                                  const EdgeInsets.only(bottom: 4),
-                              child: Text(
-                                '\$${listing.originalPrice.toStringAsFixed(2)}',
-                                style: GoogleFonts.inter(
-                                  fontSize: 16,
-                                  color: const Color(0xFF94A3B8),
-                                  decoration:
-                                      TextDecoration.lineThrough,
-                                  decorationColor:
-                                      const Color(0xFF94A3B8),
-                                ),
-                              ),
-                            ),
-                          const Spacer(),
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 12,
@@ -249,6 +223,33 @@ class _FoodListingDetailScreenState extends State<FoodListingDetailScreen> {
                               ),
                             ),
                           ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFFBEB),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.access_time_rounded,
+                                    size: 13, color: Color(0xFFF59E0B)),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Expires in ${listing.expiresIn}',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFFF59E0B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 20),
@@ -256,25 +257,27 @@ class _FoodListingDetailScreenState extends State<FoodListingDetailScreen> {
                       const Divider(color: Color(0xFFF1F5F9)),
                       const SizedBox(height: 16),
 
-                      // Description
-                      Text(
-                        'About this listing',
-                        style: GoogleFonts.inter(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16,
-                          color: const Color(0xFF0F172A),
+                      // Description (only when present)
+                      if (listing.description.isNotEmpty) ...[
+                        Text(
+                          'About this listing',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                            color: const Color(0xFF0F172A),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        listing.description,
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          height: 1.6,
-                          color: const Color(0xFF64748B),
+                        const SizedBox(height: 8),
+                        Text(
+                          listing.description,
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            height: 1.6,
+                            color: const Color(0xFF64748B),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 20),
+                        const SizedBox(height: 20),
+                      ],
 
                       // Dietary tags
                       if (listing.tags.isNotEmpty) ...[

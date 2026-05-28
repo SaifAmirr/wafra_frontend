@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wafra_frontend/features/auth/presentation/login_screen.dart';
 import 'package:wafra_frontend/features/auth/presentation/role_selection_screen.dart';
@@ -42,8 +43,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
         return;
       }
       await ApiService.instance.register(email, password, username);
-      // Register doesn't return a token — login immediately to get one
-      await ApiService.instance.login(email, password);
+      // Defensive fallback in case the server omits a token in the register response.
+      if (ApiService.instance.token == null) {
+        await ApiService.instance.login(email, password);
+      }
       if (!mounted) return;
       Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
@@ -73,21 +76,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Illustration
-              Container(
-                width: 180,
-                height: 160,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF2F2F7),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(
-                  Icons.restaurant_outlined,
-                  size: 64,
-                  color: Color(0xFF1A5C38),
-                ),
+              SvgPicture.asset(
+                'assets/images/splash_food_illustration.svg',
+                width: 120,
+                height: 120,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
               Text(
                 'Welcome',
@@ -128,20 +122,23 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
               _InputField(
                 controller: _usernameController,
+                label: 'USERNAME',
                 hint: 'username',
                 keyboardType: TextInputType.text,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
               _InputField(
                 controller: _emailController,
+                label: 'EMAIL ADDRESS',
                 hint: 'email@example.com',
                 keyboardType: TextInputType.emailAddress,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
               _InputField(
                 controller: _passwordController,
+                label: 'PASSWORD',
                 hint: '••••••••',
                 obscureText: _obscurePassword,
                 suffix: IconButton(
@@ -168,7 +165,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(28),
                     ),
                   ),
                   child: _loading
@@ -333,6 +330,7 @@ class _Tab extends StatelessWidget {
 class _InputField extends StatelessWidget {
   final TextEditingController controller;
   final String hint;
+  final String? label;
   final bool obscureText;
   final TextInputType keyboardType;
   final Widget? suffix;
@@ -340,6 +338,7 @@ class _InputField extends StatelessWidget {
   const _InputField({
     required this.controller,
     required this.hint,
+    this.label,
     this.obscureText = false,
     this.keyboardType = TextInputType.text,
     this.suffix,
@@ -347,7 +346,7 @@ class _InputField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
+    final field = TextField(
       controller: controller,
       obscureText: obscureText,
       keyboardType: keyboardType,
@@ -381,6 +380,23 @@ class _InputField extends StatelessWidget {
           borderSide: const BorderSide(color: Color(0xFF1A5C38), width: 1.5),
         ),
       ),
+    );
+    if (label == null) return field;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label!,
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
+            letterSpacing: 0.8,
+            color: const Color(0xFF0F172A),
+          ),
+        ),
+        const SizedBox(height: 6),
+        field,
+      ],
     );
   }
 }

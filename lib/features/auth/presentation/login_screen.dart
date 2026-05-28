@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wafra_frontend/features/admin/presentation/admin_dashboard_screen.dart';
 import 'package:wafra_frontend/features/listings/presentation/explore_screen.dart';
 import 'package:wafra_frontend/features/dashboard/presentation/food_bank_dashboard_screen.dart';
 import 'package:wafra_frontend/features/auth/presentation/pending_verification_screen.dart';
 import 'package:wafra_frontend/features/dashboard/presentation/restaurant_dashboard_screen.dart';
+import 'package:wafra_frontend/features/auth/presentation/role_selection_screen.dart';
 import 'package:wafra_frontend/features/auth/presentation/signup_screen.dart';
 import 'package:wafra_frontend/core/network/api_service.dart';
 
@@ -43,10 +45,18 @@ class _LoginScreenState extends State<LoginScreen> {
       final role = user?['role'] as String?;
       final status = user?['verification_status'] as String?;
       if (!mounted) return;
+      if (role == null) {
+        // User registered but never chose a role yet
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
+          (r) => false,
+        );
+        return;
+      }
       if (status == 'pending') {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
-              builder: (_) => PendingVerificationScreen(role: role ?? '')),
+              builder: (_) => PendingVerificationScreen(role: role)),
           (r) => false,
         );
         return;
@@ -67,6 +77,7 @@ class _LoginScreenState extends State<LoginScreen> {
           (r) => false,
         );
       } else {
+        // individual or any other role
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const ExploreScreen()),
           (r) => false,
@@ -97,21 +108,12 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Illustration
-              Container(
-                width: 180,
-                height: 160,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF2F2F7),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(
-                  Icons.restaurant_outlined,
-                  size: 64,
-                  color: Color(0xFF1A5C38),
-                ),
+              SvgPicture.asset(
+                'assets/images/splash_food_illustration.svg',
+                width: 120,
+                height: 120,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
               Text(
                 'Welcome',
@@ -148,13 +150,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
               _InputField(
                 controller: _emailController,
+                label: 'EMAIL ADDRESS',
                 hint: 'email@example.com',
                 keyboardType: TextInputType.emailAddress,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
               _InputField(
                 controller: _passwordController,
+                label: 'PASSWORD',
                 hint: '••••••••',
                 obscureText: _obscurePassword,
                 suffix: IconButton(
@@ -204,7 +208,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(28),
                     ),
                   ),
                   child: _loading
@@ -355,6 +359,7 @@ class _Tab extends StatelessWidget {
 class _InputField extends StatelessWidget {
   final TextEditingController controller;
   final String hint;
+  final String? label;
   final bool obscureText;
   final TextInputType keyboardType;
   final Widget? suffix;
@@ -362,6 +367,7 @@ class _InputField extends StatelessWidget {
   const _InputField({
     required this.controller,
     required this.hint,
+    this.label,
     this.obscureText = false,
     this.keyboardType = TextInputType.text,
     this.suffix,
@@ -369,7 +375,7 @@ class _InputField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
+    final field = TextField(
       controller: controller,
       obscureText: obscureText,
       keyboardType: keyboardType,
@@ -403,6 +409,23 @@ class _InputField extends StatelessWidget {
           borderSide: const BorderSide(color: Color(0xFF1A5C38), width: 1.5),
         ),
       ),
+    );
+    if (label == null) return field;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label!,
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
+            letterSpacing: 0.8,
+            color: const Color(0xFF0F172A),
+          ),
+        ),
+        const SizedBox(height: 6),
+        field,
+      ],
     );
   }
 }

@@ -13,7 +13,6 @@ class PostSurplusFoodScreen extends StatefulWidget {
 class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
   final _nameController = TextEditingController();
   final _quantityController = TextEditingController();
-  final _descriptionController = TextEditingController();
 
   int _selectedCategory = 0;
   final _categories = ['Cooked Meals', 'Bakery', 'Produce', 'Dairy', 'Beverages'];
@@ -21,18 +20,32 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
   final _dietaryOptions = ['Vegan', 'Gluten-Free', 'Halal', 'Nut-Free', 'Dairy-Free'];
   final Set<String> _selectedDietary = {};
 
-  String _selectedUnit = 'portions';
-  final _units = ['portions', 'kg', 'items', 'boxes', 'plates'];
-
   DateTime? _pickupDate;
   TimeOfDay? _pickupTime;
   bool _loading = false;
+  String? _address;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAddress();
+  }
+
+  Future<void> _loadAddress() async {
+    try {
+      final me = await ApiService.instance.getMe();
+      if (!mounted) return;
+      final profile = me['profile'] as Map<String, dynamic>?;
+      setState(() => _address = profile?['full_address'] as String?);
+    } catch (_) {
+      // best-effort; user can still publish and we send empty location
+    }
+  }
 
   @override
   void dispose() {
     _nameController.dispose();
     _quantityController.dispose();
-    _descriptionController.dispose();
     super.dispose();
   }
 
@@ -96,6 +109,12 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
       _pickupTime!.hour,
       _pickupTime!.minute,
     );
+    final location = (_address ?? '').trim();
+    if (location.isEmpty) {
+      _showError(
+          'Please add your restaurant address in your profile before posting.');
+      return;
+    }
     setState(() => _loading = true);
     try {
       await ApiService.instance.createListing(
@@ -103,7 +122,7 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
         category: _categories[_selectedCategory],
         quantity: int.parse(qtyStr),
         pickupTime: pickupDt.toIso8601String(),
-        location: 'Grand Avenue 124, NY',
+        location: location,
         dietaryTags: _selectedDietary.toList(),
       );
       if (!mounted) return;
@@ -283,62 +302,12 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // ── Quantity + Unit ────────────────────────────────────────
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _SectionLabel('Quantity'),
-                            _textField(
-                              controller: _quantityController,
-                              hint: '5',
-                              keyboardType: TextInputType.number,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _SectionLabel('Unit'),
-                            DropdownButtonFormField<String>(
-                              initialValue: _selectedUnit,
-                              items: _units
-                                  .map(
-                                    (u) => DropdownMenuItem(
-                                      value: u,
-                                      child: Text(
-                                        u,
-                                        style: GoogleFonts.inter(
-                                          fontSize: 15,
-                                          color: const Color(0xFF0F172A),
-                                        ),
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
-                              onChanged: (v) =>
-                                  setState(() => _selectedUnit = v!),
-                              style: GoogleFonts.inter(
-                                fontSize: 15,
-                                color: const Color(0xFF0F172A),
-                              ),
-                              decoration: _inputDecoration(null),
-                              icon: const Icon(
-                                Icons.keyboard_arrow_down,
-                                color: Color(0xFF64748B),
-                              ),
-                              dropdownColor: Colors.white,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                  // ── Quantity ───────────────────────────────────────────────
+                  _SectionLabel('Quantity'),
+                  _textField(
+                    controller: _quantityController,
+                    hint: '5',
+                    keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 20),
 
@@ -428,65 +397,39 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // ── Location ───────────────────────────────────────────────
-                  Row(
-                    children: [
-                      Text(
-                        'Location',
-                        style: GoogleFonts.inter(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                          color: const Color(0xFF0F172A),
+                  // ── Pickup Location (from restaurant profile) ──────────────
+                  _SectionLabel('Pickup Location'),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(12),
+                      border:
+                          Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on_outlined,
+                          size: 18,
+                          color: Color(0xFF1A5C38),
                         ),
-                      ),
-                      const Spacer(),
-                      GestureDetector(
-                        onTap: () {},
-                        child: Text(
-                          'Change',
-                          style: GoogleFonts.inter(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                            color: const Color(0xFF1A5C38),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            (_address?.trim().isNotEmpty ?? false)
+                                ? _address!
+                                : 'Add your address in your profile to publish.',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              color: (_address?.trim().isNotEmpty ?? false)
+                                  ? const Color(0xFF0F172A)
+                                  : const Color(0xFF94A3B8),
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on_outlined,
-                        size: 16,
-                        color: Color(0xFF1A5C38),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Grand Avenue 124, NY',
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          color: const Color(0xFF0F172A),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-
-                  // ── Description ────────────────────────────────────────────
-                  _SectionLabel('Description'),
-                  TextField(
-                    controller: _descriptionController,
-                    maxLines: 4,
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      color: const Color(0xFF0F172A),
-                    ),
-                    decoration: _inputDecoration(
-                      'Describe the food, packaging, or special instructions...',
-                    ).copyWith(
-                      contentPadding: const EdgeInsets.all(16),
-                      alignLabelWithHint: true,
+                      ],
                     ),
                   ),
                 ],
