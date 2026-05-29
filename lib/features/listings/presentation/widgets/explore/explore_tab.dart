@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:wafra_frontend/features/listings/data/listings_api_repository.dart';
 import 'package:wafra_frontend/features/listings/domain/entities/food_listing.dart';
 import 'package:wafra_frontend/features/listings/presentation/food_listing_detail_screen.dart';
+import 'package:wafra_frontend/features/notifications/presentation/widgets/notification_bell.dart';
 import 'food_card.dart';
 
 const _kBlue = Color(0xFF2563EB);
@@ -109,12 +110,7 @@ class _ExploreTabState extends State<ExploreTab> {
                           ),
                         ),
                         const Spacer(),
-                        const CircleAvatar(
-                          radius: 20,
-                          backgroundColor: Color(0xFFE2E8F0),
-                          child: Icon(Icons.person,
-                              color: Color(0xFF94A3B8), size: 22),
-                        ),
+                        const NotificationBell(),
                       ],
                     ),
                     const SizedBox(height: 16),
