@@ -19,16 +19,23 @@ class WafraApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1A5C38)),
       ),
-      // Constrain to phone width on web/desktop and update MediaQuery so
-      // all children see ~430px width rather than the full browser width.
       builder: (context, child) {
         final mq = MediaQuery.of(context);
-        final w = mq.size.width.clamp(0.0, 430.0);
+        // Cap system font scaling at 1.3 so large accessibility or Samsung
+        // display-size settings don't overflow fixed-height layouts.
+        final safeMq = mq.copyWith(
+          textScaler: mq.textScaler.clamp(maxScaleFactor: 1.3),
+        );
+        // On real phones (≤ 430dp wide) use the full screen — no container.
+        // On web/desktop/tablets apply a centered 430dp phone shell.
+        if (mq.size.width <= 430) {
+          return MediaQuery(data: safeMq, child: child!);
+        }
         return Center(
           child: SizedBox(
-            width: w,
+            width: 430,
             child: MediaQuery(
-              data: mq.copyWith(size: Size(w, mq.size.height)),
+              data: safeMq.copyWith(size: Size(430, mq.size.height)),
               child: ClipRect(child: child!),
             ),
           ),
