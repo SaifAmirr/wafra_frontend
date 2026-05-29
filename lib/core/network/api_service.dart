@@ -281,6 +281,25 @@ class ApiService {
     await _handle(res);
   }
 
+  // ─── Notifications ──────────────────────────────────────────────────────────
+
+  Future<List<dynamic>> getNotifications() async {
+    final res = await _client.get(
+      Uri.parse('$_base/notifications'),
+      headers: _authHeaders,
+    );
+    final body = await _handle(res);
+    return (body['notifications'] as List?) ?? [];
+  }
+
+  Future<void> markAllNotificationsRead() async {
+    final res = await _client.patch(
+      Uri.parse('$_base/notifications/read'),
+      headers: _authHeaders,
+    );
+    await _handle(res);
+  }
+
   // ─── Pickups ────────────────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>> generatePickup(int reservationId) async {

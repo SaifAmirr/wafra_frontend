@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:wafra_frontend/features/dashboard/data/dashboard_repository.dart';
 import 'package:wafra_frontend/features/listings/domain/entities/food_listing.dart';
 import 'package:wafra_frontend/features/listings/presentation/food_listing_detail_screen.dart';
+import 'package:wafra_frontend/features/notifications/presentation/widgets/notification_bell.dart';
 import 'compact_listing_card.dart';
 import 'active_order_card.dart';
 
@@ -139,6 +140,8 @@ class _FoodBankHomeTabState extends State<FoodBankHomeTab> {
                           ],
                         ),
                       ),
+                      const NotificationBell(),
+                      const SizedBox(width: 10),
                       CircleAvatar(
                         radius: 22,
                         backgroundColor:
