@@ -99,7 +99,7 @@ class ApiService {
     String? phone,
     String? birthdate,
   }) async {
-    final res = await _client.post(
+    final res = await _client.patch(
       Uri.parse('$_base/auth/complete-profile'),
       headers: _authHeaders,
       body: jsonEncode(<String, dynamic>{
@@ -120,7 +120,7 @@ class ApiService {
     String? phone,
     String? location,
   }) async {
-    final res = await _client.post(
+    final res = await _client.patch(
       Uri.parse('$_base/auth/complete-profile'),
       headers: _authHeaders,
       body: jsonEncode(<String, dynamic>{
@@ -143,7 +143,7 @@ class ApiService {
     String? phone,
     String? businessLicenseNumber,
   }) async {
-    final res = await _client.post(
+    final res = await _client.patch(
       Uri.parse('$_base/auth/complete-profile'),
       headers: _authHeaders,
       body: jsonEncode(<String, dynamic>{
@@ -292,11 +292,15 @@ class ApiService {
     return _handle(res);
   }
 
-  Future<Map<String, dynamic>> confirmPickup(String code) async {
+  Future<Map<String, dynamic>> confirmPickup(
+      int reservationId, String pickupCode) async {
     final res = await _client.post(
       Uri.parse('$_base/pickups/confirm'),
       headers: _authHeaders,
-      body: jsonEncode({'code': code}),
+      body: jsonEncode({
+        'reservation_id': reservationId,
+        'pickup_code': pickupCode,
+      }),
     );
     return _handle(res);
   }

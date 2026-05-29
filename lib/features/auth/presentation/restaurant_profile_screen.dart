@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wafra_frontend/features/auth/presentation/pending_verification_screen.dart';
+import 'package:wafra_frontend/features/auth/data/auth_repository.dart';
 import 'package:wafra_frontend/core/network/api_service.dart';
+import 'widgets/profile_form_field.dart';
+import 'widgets/profile_progress_dots.dart';
 
 class RestaurantProfileScreen extends StatefulWidget {
   const RestaurantProfileScreen({super.key});
@@ -43,7 +46,7 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> {
     setState(() => _loading = true);
     try {
       final phoneLocal = _phoneController.text.trim();
-      await ApiService.instance.completeRestaurantProfile(
+      await AuthRepository.instance.completeRestaurantProfile(
         restaurantName: name,
         cuisineType: _cuisineController.text.trim(),
         fullAddress: _addressController.text.trim(),
@@ -52,16 +55,17 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> {
       );
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const PendingVerificationScreen(role: 'restaurant')),
+        MaterialPageRoute(
+            builder: (_) =>
+                const PendingVerificationScreen(role: 'restaurant')),
         (r) => false,
       );
     } on ApiException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.message),
-            backgroundColor: Colors.red.shade700,
-          ),
+              content: Text(e.message),
+              backgroundColor: Colors.red.shade700),
         );
       }
     } catch (_) {
@@ -91,38 +95,27 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Back + progress
                     Row(
                       children: [
                         GestureDetector(
                           onTap: () => Navigator.of(context).pop(),
-                          child: const Icon(
-                            Icons.arrow_back_ios,
-                            size: 20,
-                            color: Color(0xFF0F172A),
-                          ),
+                          child: const Icon(Icons.arrow_back_ios,
+                              size: 20, color: Color(0xFF0F172A)),
                         ),
                         const Expanded(
                           child: Center(
-                            child: _ProgressDots(
-                              currentStep: 1,
-                              totalSteps: 3,
-                            ),
+                            child: ProfileProgressDots(
+                                currentStep: 1, totalSteps: 3),
                           ),
                         ),
                         const SizedBox(width: 20),
                       ],
                     ),
                     const SizedBox(height: 28),
-
-                    // Role tag
                     Row(
                       children: [
-                        const Icon(
-                          Icons.storefront_outlined,
-                          size: 14,
-                          color: Color(0xFF1A5C38),
-                        ),
+                        const Icon(Icons.storefront_outlined,
+                            size: 14, color: Color(0xFF1A5C38)),
                         const SizedBox(width: 6),
                         Text(
                           'RESTAURANT ROLE',
@@ -136,7 +129,6 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> {
                       ],
                     ),
                     const SizedBox(height: 10),
-
                     Text(
                       'Business Details',
                       style: GoogleFonts.inter(
@@ -147,7 +139,6 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-
                     Text(
                       'Complete your profile to start donating surplus food safely.',
                       style: GoogleFonts.inter(
@@ -158,8 +149,7 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 28),
-
-                    _FormField(
+                    ProfileFormField(
                       label: 'Restaurant Name',
                       controller: _nameController,
                       hint: 'e.g. The Green Kitchen',
@@ -167,17 +157,14 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> {
                       keyboardType: TextInputType.name,
                     ),
                     const SizedBox(height: 20),
-
-                    _FormField(
+                    ProfileFormField(
                       label: 'Cuisine Type',
                       controller: _cuisineController,
                       hint: 'e.g. Mediterranean, Fast Food',
                       icon: Icons.restaurant_menu_outlined,
-                      keyboardType: TextInputType.text,
                     ),
                     const SizedBox(height: 20),
-
-                    _FormField(
+                    ProfileFormField(
                       label: 'Full Address',
                       controller: _addressController,
                       hint: 'Street, City, Zip Code',
@@ -185,8 +172,7 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> {
                       keyboardType: TextInputType.streetAddress,
                     ),
                     const SizedBox(height: 20),
-
-                    _FormField(
+                    ProfileFormField(
                       label: 'Phone Number',
                       controller: _phoneController,
                       hint: '10 0000 0000',
@@ -195,20 +181,16 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> {
                       prefixText: '+20 ',
                     ),
                     const SizedBox(height: 20),
-
-                    _FormField(
+                    ProfileFormField(
                       label: 'Business License Number',
                       controller: _licenseController,
                       hint: 'LIC-987654321',
                       icon: Icons.badge_outlined,
-                      keyboardType: TextInputType.text,
                     ),
                   ],
                 ),
               ),
             ),
-
-            // Fixed bottom button
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
               child: SizedBox(
@@ -221,17 +203,14 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> {
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                   child: _loading
                       ? const SizedBox(
                           width: 22,
                           height: 22,
                           child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Colors.white,
-                          ),
+                              strokeWidth: 2.5, color: Colors.white),
                         )
                       : Text(
                           'Complete Setup',
@@ -247,120 +226,6 @@ class _RestaurantProfileScreenState extends State<RestaurantProfileScreen> {
           ],
         ),
       ),
-    );
-  }
-}
-
-// ─── Form field with label + leading icon ─────────────────────────────────────
-
-class _FormField extends StatelessWidget {
-  final String label;
-  final TextEditingController controller;
-  final String hint;
-  final IconData icon;
-  final TextInputType keyboardType;
-  final String? prefixText;
-
-  const _FormField({
-    required this.label,
-    required this.controller,
-    required this.hint,
-    required this.icon,
-    this.keyboardType = TextInputType.text,
-    this.prefixText,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
-            color: const Color(0xFF0F172A),
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          keyboardType: keyboardType,
-          style: GoogleFonts.inter(
-            fontWeight: FontWeight.w400,
-            fontSize: 15,
-            color: const Color(0xFF0F172A),
-          ),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: GoogleFonts.inter(
-              fontWeight: FontWeight.w400,
-              fontSize: 15,
-              color: const Color(0xFFCBD5E1),
-            ),
-            prefixIcon: Icon(icon, size: 18, color: const Color(0xFF94A3B8)),
-            prefixText: prefixText,
-            prefixStyle: GoogleFonts.inter(
-              fontWeight: FontWeight.w500,
-              fontSize: 15,
-              color: const Color(0xFF0F172A),
-            ),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide:
-                  const BorderSide(color: Color(0xFF1A5C38), width: 1.5),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ─── Progress dots (shared shape with role selection screen) ──────────────────
-
-class _ProgressDots extends StatelessWidget {
-  final int currentStep;
-  final int totalSteps;
-
-  const _ProgressDots({required this.currentStep, required this.totalSteps});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(totalSteps, (i) {
-        final isActive = i == currentStep;
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 3),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: isActive ? 24 : 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: isActive
-                  ? const Color(0xFF1A5C38)
-                  : const Color(0xFFD9D9D9),
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-        );
-      }),
     );
   }
 }
