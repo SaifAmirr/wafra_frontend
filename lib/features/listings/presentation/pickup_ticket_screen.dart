@@ -1,6 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:wafra_frontend/core/network/api_service.dart';
+import '../data/listings_api_repository.dart';
 
 class PickupTicketScreen extends StatefulWidget {
   final int reservationId;
@@ -20,6 +23,7 @@ class PickupTicketScreen extends StatefulWidget {
 
 class _PickupTicketScreenState extends State<PickupTicketScreen> {
   String? _pickupCode;
+  String? _qrData;
   bool _loading = true;
   String? _error;
 
@@ -31,18 +35,28 @@ class _PickupTicketScreenState extends State<PickupTicketScreen> {
 
   Future<void> _generate() async {
     try {
-      final result = await ApiService.instance.generatePickup(widget.reservationId);
+      final result =
+          await ListingsApiRepository.instance.generatePickup(widget.reservationId);
       if (!mounted) return;
+      final pickup = result['pickup'] as Map<String, dynamic>;
+      final qrPayload = pickup['qr_payload'] as Map<String, dynamic>;
       setState(() {
-        _pickupCode = result['code'] as String?;
+        _pickupCode = pickup['code'] as String?;
+        _qrData = jsonEncode(qrPayload);
         _loading = false;
       });
     } on ApiException catch (e) {
       if (!mounted) return;
-      setState(() { _error = e.message; _loading = false; });
+      setState(() {
+        _error = e.message;
+        _loading = false;
+      });
     } catch (_) {
       if (!mounted) return;
-      setState(() { _error = 'Could not generate pickup code.'; _loading = false; });
+      setState(() {
+        _error = 'Could not generate pickup code.';
+        _loading = false;
+      });
     }
   }
 
@@ -61,7 +75,8 @@ class _PickupTicketScreenState extends State<PickupTicketScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(_error!,
-                              style: const TextStyle(color: Colors.white, fontSize: 15),
+                              style: const TextStyle(
+                                  color: Colors.white, fontSize: 15),
                               textAlign: TextAlign.center),
                           const SizedBox(height: 16),
                           TextButton(
@@ -72,7 +87,8 @@ class _PickupTicketScreenState extends State<PickupTicketScreen> {
                         ],
                       )
                     : _TicketCard(
-                        pickupCode: _pickupCode ?? '----',
+                        pickupCode: _pickupCode ?? '------',
+                        qrData: _qrData!,
                         restaurantName: widget.restaurantName,
                         restaurantAddress: widget.restaurantAddress,
                       ),
@@ -85,11 +101,13 @@ class _PickupTicketScreenState extends State<PickupTicketScreen> {
 
 class _TicketCard extends StatelessWidget {
   final String pickupCode;
+  final String qrData;
   final String restaurantName;
   final String restaurantAddress;
 
   const _TicketCard({
     required this.pickupCode,
+    required this.qrData,
     required this.restaurantName,
     required this.restaurantAddress,
   });
@@ -156,7 +174,12 @@ class _TicketCard extends StatelessWidget {
               border: Border.all(color: const Color(0xFFE2E8F0)),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const _QrCodePlaceholder(),
+            child: QrImageView(
+              data: qrData,
+              version: QrVersions.auto,
+              size: 156,
+              backgroundColor: Colors.white,
+            ),
           ),
 
           const SizedBox(height: 20),
@@ -191,7 +214,8 @@ class _TicketCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               children: [
-                const Icon(Icons.location_on, color: Color(0xFF1A5C38), size: 20),
+                const Icon(Icons.location_on,
+                    color: Color(0xFF1A5C38), size: 20),
                 const SizedBox(width: 8),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -252,65 +276,4 @@ class _TicketCard extends StatelessWidget {
       ),
     );
   }
-}
-
-// ─── QR Code Placeholder ──────────────────────────────────────────────────────
-
-class _QrCodePlaceholder extends StatelessWidget {
-  const _QrCodePlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: const Size(double.infinity, double.infinity),
-      painter: _QrPainter(),
-    );
-  }
-}
-
-class _QrPainter extends CustomPainter {
-  // Simplified 21×21 QR-style grid with proper finder patterns in 3 corners
-  static const _grid = [
-    [1,1,1,1,1,1,1,0,1,0,1,0,0,0,1,1,1,1,1,1,1],
-    [1,0,0,0,0,0,1,0,0,1,0,1,0,0,1,0,0,0,0,0,1],
-    [1,0,1,1,1,0,1,0,1,0,1,0,1,0,1,0,1,1,1,0,1],
-    [1,0,1,1,1,0,1,0,0,1,0,0,0,0,1,0,1,1,1,0,1],
-    [1,0,1,1,1,0,1,0,1,1,1,0,1,0,1,0,1,1,1,0,1],
-    [1,0,0,0,0,0,1,0,0,0,0,1,0,0,1,0,0,0,0,0,1],
-    [1,1,1,1,1,1,1,0,1,0,1,0,1,0,1,1,1,1,1,1,1],
-    [0,0,0,0,0,0,0,0,1,1,0,1,0,1,0,0,0,0,0,0,0],
-    [1,0,1,0,1,1,0,1,0,1,1,0,1,1,0,1,0,1,1,0,1],
-    [0,1,0,1,0,0,1,0,1,0,0,1,0,0,1,0,1,0,0,1,0],
-    [1,0,1,1,0,1,0,0,0,1,1,0,1,0,0,1,0,1,1,0,0],
-    [0,1,0,0,1,0,0,1,1,0,0,1,0,1,1,0,1,0,0,1,1],
-    [1,0,0,1,0,1,1,0,1,1,0,0,1,0,0,1,0,0,1,0,0],
-    [0,0,0,0,0,0,0,0,1,0,1,1,0,0,1,0,1,1,0,1,0],
-    [1,1,1,1,1,1,1,0,0,1,0,0,1,0,1,1,0,0,1,0,1],
-    [1,0,0,0,0,0,1,0,1,0,1,0,0,1,0,0,1,0,0,1,0],
-    [1,0,1,1,1,0,1,1,0,1,0,1,0,0,1,1,0,1,0,1,1],
-    [1,0,1,1,1,0,1,0,1,0,0,0,1,0,0,0,1,0,1,0,0],
-    [1,0,1,1,1,0,1,0,0,1,1,1,0,1,1,0,0,1,0,1,1],
-    [1,0,0,0,0,0,1,0,1,0,0,0,1,0,0,1,0,0,1,0,0],
-    [1,1,1,1,1,1,1,0,0,1,1,0,0,1,1,0,1,1,0,1,1],
-  ];
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.black;
-    final cell = size.width / _grid.length;
-
-    for (int row = 0; row < _grid.length; row++) {
-      for (int col = 0; col < _grid[row].length; col++) {
-        if (_grid[row][col] == 1) {
-          canvas.drawRect(
-            Rect.fromLTWH(col * cell, row * cell, cell, cell),
-            paint,
-          );
-        }
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

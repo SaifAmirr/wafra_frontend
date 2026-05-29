@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:wafra_frontend/features/listings/presentation/post_success_screen.dart';
 import 'package:wafra_frontend/core/network/api_service.dart';
+import 'package:wafra_frontend/features/listings/data/listings_api_repository.dart';
+import 'widgets/post_surplus/section_label.dart';
+import 'widgets/post_surplus/dashed_border_painter.dart';
+import 'post_success_screen.dart';
 
 class PostSurplusFoodScreen extends StatefulWidget {
   const PostSurplusFoodScreen({super.key});
@@ -15,9 +18,21 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
   final _quantityController = TextEditingController();
 
   int _selectedCategory = 0;
-  final _categories = ['Cooked Meals', 'Bakery', 'Produce', 'Dairy', 'Beverages'];
+  final _categories = [
+    'Cooked Meals',
+    'Bakery',
+    'Produce',
+    'Dairy',
+    'Beverages'
+  ];
 
-  final _dietaryOptions = ['Vegan', 'Gluten-Free', 'Halal', 'Nut-Free', 'Dairy-Free'];
+  final _dietaryOptions = [
+    'Vegan',
+    'Gluten-Free',
+    'Halal',
+    'Nut-Free',
+    'Dairy-Free'
+  ];
   final Set<String> _selectedDietary = {};
 
   DateTime? _pickupDate;
@@ -31,22 +46,20 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
     _loadAddress();
   }
 
-  Future<void> _loadAddress() async {
-    try {
-      final me = await ApiService.instance.getMe();
-      if (!mounted) return;
-      final profile = me['profile'] as Map<String, dynamic>?;
-      setState(() => _address = profile?['full_address'] as String?);
-    } catch (_) {
-      // best-effort; user can still publish and we send empty location
-    }
-  }
-
   @override
   void dispose() {
     _nameController.dispose();
     _quantityController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadAddress() async {
+    try {
+      final me = await ListingsApiRepository.instance.getMe();
+      if (!mounted) return;
+      final profile = me['profile'] as Map<String, dynamic>?;
+      setState(() => _address = profile?['full_address'] as String?);
+    } catch (_) {}
   }
 
   Future<void> _pickDate() async {
@@ -117,7 +130,7 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
     }
     setState(() => _loading = true);
     try {
-      await ApiService.instance.createListing(
+      await ListingsApiRepository.instance.createListing(
         foodName: name,
         category: _categories[_selectedCategory],
         quantity: int.parse(qtyStr),
@@ -168,11 +181,8 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
         scrolledUnderElevation: 0,
         leading: GestureDetector(
           onTap: () => Navigator.of(context).pop(),
-          child: const Icon(
-            Icons.arrow_back_ios,
-            color: Color(0xFF0F172A),
-            size: 20,
-          ),
+          child: const Icon(Icons.arrow_back_ios,
+              color: Color(0xFF0F172A), size: 20),
         ),
         title: Text(
           'Post Surplus Food',
@@ -192,11 +202,10 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Photo upload ───────────────────────────────────────────
                   GestureDetector(
-                    onTap: () {}, // TODO: open image picker
+                    onTap: () {},
                     child: CustomPaint(
-                      painter: _DashedBorderPainter(),
+                      painter: const DashedBorderPainter(),
                       child: Container(
                         width: double.infinity,
                         height: 140,
@@ -214,11 +223,8 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
                                 color: Color(0xFF1A5C38),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(
-                                Icons.camera_alt_outlined,
-                                color: Colors.white,
-                                size: 22,
-                              ),
+                              child: const Icon(Icons.camera_alt_outlined,
+                                  color: Colors.white, size: 22),
                             ),
                             const SizedBox(height: 10),
                             Text(
@@ -243,18 +249,14 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-
-                  // ── Food Name ──────────────────────────────────────────────
-                  _SectionLabel('Food Name'),
+                  const SectionLabel('Food Name'),
                   _textField(
                     controller: _nameController,
                     hint: 'e.g. Fresh Garden Salad',
                     keyboardType: TextInputType.text,
                   ),
                   const SizedBox(height: 20),
-
-                  // ── Category ───────────────────────────────────────────────
-                  _SectionLabel('Category'),
+                  const SectionLabel('Category'),
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
@@ -262,17 +264,14 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
                         final active = i == _selectedCategory;
                         return Padding(
                           padding: EdgeInsets.only(
-                            right: i < _categories.length - 1 ? 8 : 0,
-                          ),
+                              right: i < _categories.length - 1 ? 8 : 0),
                           child: GestureDetector(
                             onTap: () =>
                                 setState(() => _selectedCategory = i),
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 180),
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 9,
-                              ),
+                                  horizontal: 16, vertical: 9),
                               decoration: BoxDecoration(
                                 color: active
                                     ? const Color(0xFF1A5C38)
@@ -301,18 +300,14 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-
-                  // ── Quantity ───────────────────────────────────────────────
-                  _SectionLabel('Quantity'),
+                  const SectionLabel('Quantity'),
                   _textField(
                     controller: _quantityController,
                     hint: '5',
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 20),
-
-                  // ── Dietary Tags ───────────────────────────────────────────
-                  _SectionLabel('Dietary Tags'),
+                  const SectionLabel('Dietary Tags'),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -325,9 +320,7 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 180),
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
-                          ),
+                              horizontal: 14, vertical: 8),
                           decoration: BoxDecoration(
                             color: selected
                                 ? const Color(0xFFECFDF5)
@@ -343,11 +336,8 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               if (selected) ...[
-                                const Icon(
-                                  Icons.check,
-                                  size: 13,
-                                  color: Color(0xFF1A5C38),
-                                ),
+                                const Icon(Icons.check,
+                                    size: 13, color: Color(0xFF1A5C38)),
                                 const SizedBox(width: 4),
                               ],
                               Text(
@@ -367,9 +357,7 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
                     }).toList(),
                   ),
                   const SizedBox(height: 20),
-
-                  // ── Pickup Availability ────────────────────────────────────
-                  _SectionLabel('Pickup Availability'),
+                  const SectionLabel('Pickup Availability'),
                   Row(
                     children: [
                       Expanded(
@@ -396,25 +384,19 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
                     ],
                   ),
                   const SizedBox(height: 20),
-
-                  // ── Pickup Location (from restaurant profile) ──────────────
-                  _SectionLabel('Pickup Location'),
+                  const SectionLabel('Pickup Location'),
                   Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 14),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(12),
-                      border:
-                          Border.all(color: const Color(0xFFE2E8F0)),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
                     ),
                     child: Row(
                       children: [
-                        const Icon(
-                          Icons.location_on_outlined,
-                          size: 18,
-                          color: Color(0xFF1A5C38),
-                        ),
+                        const Icon(Icons.location_on_outlined,
+                            size: 18, color: Color(0xFF1A5C38)),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -436,8 +418,6 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
               ),
             ),
           ),
-
-          // ── Publish button (fixed) ─────────────────────────────────────────
           Container(
             padding: EdgeInsets.fromLTRB(
               20,
@@ -465,24 +445,19 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
                   foregroundColor: Colors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                      borderRadius: BorderRadius.circular(12)),
                 ),
                 child: _loading
                     ? const SizedBox(
                         width: 22,
                         height: 22,
                         child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: Colors.white,
-                        ),
+                            strokeWidth: 2.5, color: Colors.white),
                       )
                     : Text(
                         'Publish Listing',
                         style: GoogleFonts.inter(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 18,
-                        ),
+                            fontWeight: FontWeight.w700, fontSize: 18),
                       ),
               ),
             ),
@@ -492,8 +467,6 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
     );
   }
 
-  // ── Helpers ──────────────────────────────────────────────────────────────────
-
   Widget _textField({
     required TextEditingController controller,
     required String hint,
@@ -502,7 +475,8 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
-      style: GoogleFonts.inter(fontSize: 15, color: const Color(0xFF0F172A)),
+      style: GoogleFonts.inter(
+          fontSize: 15, color: const Color(0xFF0F172A)),
       decoration: _inputDecoration(hint),
     );
   }
@@ -528,7 +502,8 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF1A5C38), width: 1.5),
+        borderSide:
+            const BorderSide(color: Color(0xFF1A5C38), width: 1.5),
       ),
     );
   }
@@ -565,65 +540,4 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
       ),
     );
   }
-}
-
-// ─── Section label ────────────────────────────────────────────────────────────
-
-class _SectionLabel extends StatelessWidget {
-  final String text;
-
-  const _SectionLabel(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
-        text,
-        style: GoogleFonts.inter(
-          fontWeight: FontWeight.w600,
-          fontSize: 13,
-          color: const Color(0xFF0F172A),
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Dashed border painter ────────────────────────────────────────────────────
-
-class _DashedBorderPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFF1A5C38).withValues(alpha: 0.4)
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
-
-    const dash = 6.0;
-    const gap = 4.0;
-    const radius = 12.0;
-
-    final path = Path()
-      ..addRRect(RRect.fromRectAndRadius(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-        const Radius.circular(radius),
-      ));
-
-    final dashed = Path();
-    for (final metric in path.computeMetrics()) {
-      double distance = 0;
-      while (distance < metric.length) {
-        dashed.addPath(
-          metric.extractPath(distance, distance + dash),
-          Offset.zero,
-        );
-        distance += dash + gap;
-      }
-    }
-    canvas.drawPath(dashed, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

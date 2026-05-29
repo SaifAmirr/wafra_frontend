@@ -8,7 +8,10 @@ import 'package:wafra_frontend/features/auth/presentation/pending_verification_s
 import 'package:wafra_frontend/features/dashboard/presentation/restaurant_dashboard_screen.dart';
 import 'package:wafra_frontend/features/auth/presentation/role_selection_screen.dart';
 import 'package:wafra_frontend/features/auth/presentation/signup_screen.dart';
+import 'package:wafra_frontend/features/auth/data/auth_repository.dart';
 import 'package:wafra_frontend/core/network/api_service.dart';
+import 'widgets/auth_tab_switcher.dart';
+import 'widgets/auth_input_field.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -39,14 +42,13 @@ class _LoginScreenState extends State<LoginScreen> {
     }
     setState(() => _loading = true);
     try {
-      await ApiService.instance.login(email, password);
-      final me = await ApiService.instance.getMe();
+      await AuthRepository.instance.login(email, password);
+      final me = await AuthRepository.instance.getMe();
       final user = me['user'] as Map<String, dynamic>?;
       final role = user?['role'] as String?;
       final status = user?['verification_status'] as String?;
       if (!mounted) return;
       if (role == null) {
-        // User registered but never chose a role yet
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
           (r) => false,
@@ -77,7 +79,6 @@ class _LoginScreenState extends State<LoginScreen> {
           (r) => false,
         );
       } else {
-        // individual or any other role
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const ExploreScreen()),
           (r) => false,
@@ -114,7 +115,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 height: 120,
               ),
               const SizedBox(height: 20),
-
               Text(
                 'Welcome',
                 textAlign: TextAlign.center,
@@ -127,7 +127,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-
               Text(
                 'Enter your details to get started',
                 textAlign: TextAlign.center,
@@ -139,24 +138,21 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 32),
-
-              _TabSwitcher(
-                isLogin: true,
-                onSignUpTap: () => Navigator.of(context).pushReplacement(
+              AuthTabSwitcher(
+                showLogin: true,
+                onOtherTap: () => Navigator.of(context).pushReplacement(
                   MaterialPageRoute(builder: (_) => const SignUpScreen()),
                 ),
               ),
               const SizedBox(height: 32),
-
-              _InputField(
+              AuthInputField(
                 controller: _emailController,
                 label: 'EMAIL ADDRESS',
                 hint: 'email@example.com',
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 20),
-
-              _InputField(
+              AuthInputField(
                 controller: _passwordController,
                 label: 'PASSWORD',
                 hint: '••••••••',
@@ -174,16 +170,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 4),
-
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () {},
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 4,
-                      vertical: 11,
-                    ),
+                        horizontal: 4, vertical: 11),
                   ),
                   child: Text(
                     'Forgot Password?',
@@ -197,7 +190,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-
               SizedBox(
                 width: double.infinity,
                 height: 56,
@@ -216,9 +208,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           width: 22,
                           height: 22,
                           child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Colors.white,
-                          ),
+                              strokeWidth: 2.5, color: Colors.white),
                         )
                       : Text(
                           'Log In',
@@ -231,7 +221,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 4),
-
               TextButton(
                 onPressed: () {},
                 child: Text(
@@ -245,7 +234,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-
               RichText(
                 textAlign: TextAlign.center,
                 text: TextSpan(
@@ -280,152 +268,6 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
-    );
-  }
-}
-
-// ─── Tab switcher ─────────────────────────────────────────────────────────────
-
-class _TabSwitcher extends StatelessWidget {
-  final bool isLogin;
-  final VoidCallback onSignUpTap;
-
-  const _TabSwitcher({required this.isLogin, required this.onSignUpTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF2F2F7),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          _Tab(label: 'Sign Up', active: !isLogin, onTap: onSignUpTap),
-          _Tab(label: 'Log In', active: isLogin, onTap: () {}),
-        ],
-      ),
-    );
-  }
-}
-
-class _Tab extends StatelessWidget {
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-
-  const _Tab({required this.label, required this.active, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: active ? Colors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: active
-                ? const [
-                    BoxShadow(
-                      color: Color(0x0D000000),
-                      blurRadius: 2,
-                      offset: Offset(0, 1),
-                    ),
-                  ]
-                : null,
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: GoogleFonts.inter(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-              height: 21 / 14,
-              color: active ? const Color(0xFF0F172A) : const Color(0xFF8E8E93),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Input field ──────────────────────────────────────────────────────────────
-
-class _InputField extends StatelessWidget {
-  final TextEditingController controller;
-  final String hint;
-  final String? label;
-  final bool obscureText;
-  final TextInputType keyboardType;
-  final Widget? suffix;
-
-  const _InputField({
-    required this.controller,
-    required this.hint,
-    this.label,
-    this.obscureText = false,
-    this.keyboardType = TextInputType.text,
-    this.suffix,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final field = TextField(
-      controller: controller,
-      obscureText: obscureText,
-      keyboardType: keyboardType,
-      style: GoogleFonts.inter(
-        fontWeight: FontWeight.w500,
-        fontSize: 16,
-        color: const Color(0xFF0F172A),
-      ),
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: GoogleFonts.inter(
-          fontWeight: FontWeight.w500,
-          fontSize: 16,
-          color: const Color(0xFFCBD5E1),
-        ),
-        suffixIcon: suffix,
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF1A5C38), width: 1.5),
-        ),
-      ),
-    );
-    if (label == null) return field;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label!,
-          style: GoogleFonts.inter(
-            fontWeight: FontWeight.w600,
-            fontSize: 12,
-            letterSpacing: 0.8,
-            color: const Color(0xFF0F172A),
-          ),
-        ),
-        const SizedBox(height: 6),
-        field,
-      ],
     );
   }
 }

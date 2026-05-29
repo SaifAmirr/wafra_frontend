@@ -3,7 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:wafra_frontend/features/auth/presentation/food_bank_profile_screen.dart';
 import 'package:wafra_frontend/features/auth/presentation/individual_profile_screen.dart';
 import 'package:wafra_frontend/features/auth/presentation/restaurant_profile_screen.dart';
+import 'package:wafra_frontend/features/auth/data/auth_repository.dart';
 import 'package:wafra_frontend/core/network/api_service.dart';
+import 'widgets/profile_progress_dots.dart';
 
 enum UserRole { restaurant, individual, foodBank }
 
@@ -28,7 +30,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
     if (_selectedRole == null) return;
     setState(() => _loading = true);
     try {
-      await ApiService.instance.chooseRole(_roleStrings[_selectedRole]!);
+      await AuthRepository.instance.chooseRole(_roleStrings[_selectedRole]!);
       if (!mounted) return;
       switch (_selectedRole) {
         case UserRole.restaurant:
@@ -47,11 +49,15 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
       }
     } on ApiException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message), backgroundColor: Colors.red.shade700),
+        SnackBar(
+            content: Text(e.message),
+            backgroundColor: Colors.red.shade700),
       );
     } catch (_) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not connect to server.'), backgroundColor: Colors.red),
+        const SnackBar(
+            content: Text('Could not connect to server.'),
+            backgroundColor: Colors.red),
       );
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -68,25 +74,23 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Back button + progress indicator
               Row(
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.of(context).pop(),
-                    child: const Icon(
-                      Icons.arrow_back_ios,
-                      size: 20,
-                      color: Color(0xFF0F172A),
-                    ),
+                    child: const Icon(Icons.arrow_back_ios,
+                        size: 20, color: Color(0xFF0F172A)),
                   ),
                   const Expanded(
-                    child: Center(child: _ProgressDots(currentStep: 1, totalSteps: 3)),
+                    child: Center(
+                      child: ProfileProgressDots(
+                          currentStep: 1, totalSteps: 3),
+                    ),
                   ),
                   const SizedBox(width: 20),
                 ],
               ),
               const SizedBox(height: 32),
-
               Text(
                 'Choose your role',
                 style: GoogleFonts.inter(
@@ -97,7 +101,6 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-
               Text(
                 'Tell us how you want to use the app',
                 style: GoogleFonts.inter(
@@ -108,7 +111,6 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                 ),
               ),
               const SizedBox(height: 32),
-
               _RoleCard(
                 title: 'Restaurant',
                 subtitle: 'Donate surplus food and manage donations',
@@ -119,7 +121,6 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                 onTap: () => setState(() => _selectedRole = UserRole.restaurant),
               ),
               const SizedBox(height: 16),
-
               _RoleCard(
                 title: 'Individual',
                 subtitle: 'Find food nearby or share with neighbors',
@@ -127,10 +128,10 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                 iconBg: const Color(0xFFEFF6FF),
                 iconColor: const Color(0xFF3B82F6),
                 selected: _selectedRole == UserRole.individual,
-                onTap: () => setState(() => _selectedRole = UserRole.individual),
+                onTap: () =>
+                    setState(() => _selectedRole = UserRole.individual),
               ),
               const SizedBox(height: 16),
-
               _RoleCard(
                 title: 'Food Bank',
                 subtitle: 'Coordinate large scale distributions',
@@ -140,14 +141,14 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                 selected: _selectedRole == UserRole.foodBank,
                 onTap: () => setState(() => _selectedRole = UserRole.foodBank),
               ),
-
               const Spacer(),
-
               SizedBox(
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: (_selectedRole == null || _loading) ? null : _chooseRole,
+                  onPressed: (_selectedRole == null || _loading)
+                      ? null
+                      : _chooseRole,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1A5C38),
                     disabledBackgroundColor:
@@ -164,9 +165,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                           width: 22,
                           height: 22,
                           child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Colors.white,
-                          ),
+                              strokeWidth: 2.5, color: Colors.white),
                         )
                       : Text(
                           'Continue',
@@ -185,8 +184,6 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
     );
   }
 }
-
-// ─── Role card ────────────────────────────────────────────────────────────────
 
 class _RoleCard extends StatelessWidget {
   final String title;
@@ -218,7 +215,9 @@ class _RoleCard extends StatelessWidget {
           color: selected ? const Color(0xFFECFDF5) : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: selected ? const Color(0xFF1A5C38) : const Color(0xFFE2E8F0),
+            color: selected
+                ? const Color(0xFF1A5C38)
+                : const Color(0xFFE2E8F0),
             width: selected ? 2 : 1,
           ),
         ),
@@ -271,11 +270,8 @@ class _RoleCard extends StatelessWidget {
                         color: Color(0xFF1A5C38),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
-                        Icons.check,
-                        color: Colors.white,
-                        size: 14,
-                      ),
+                      child: const Icon(Icons.check,
+                          color: Colors.white, size: 14),
                     )
                   : Container(
                       key: const ValueKey(false),
@@ -293,39 +289,6 @@ class _RoleCard extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-// ─── Progress dots ────────────────────────────────────────────────────────────
-
-class _ProgressDots extends StatelessWidget {
-  final int currentStep;
-  final int totalSteps;
-
-  const _ProgressDots({required this.currentStep, required this.totalSteps});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(totalSteps, (i) {
-        final isActive = i == currentStep;
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 3),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: isActive ? 24 : 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: isActive
-                  ? const Color(0xFF1A5C38)
-                  : const Color(0xFFD9D9D9),
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-        );
-      }),
     );
   }
 }

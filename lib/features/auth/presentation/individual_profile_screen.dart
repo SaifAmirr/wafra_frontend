@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wafra_frontend/features/listings/presentation/explore_screen.dart';
-import 'package:wafra_frontend/core/network/api_service.dart';
+import 'package:wafra_frontend/features/auth/data/auth_repository.dart';
+import 'widgets/profile_form_field.dart';
+import 'widgets/profile_progress_dots.dart';
 
 class IndividualProfileScreen extends StatefulWidget {
   const IndividualProfileScreen({super.key});
@@ -51,7 +53,7 @@ class _IndividualProfileScreenState extends State<IndividualProfileScreen> {
     setState(() => _loading = true);
     try {
       final phoneLocal = _phoneController.text.trim();
-      await ApiService.instance.completeIndividualProfile(
+      await AuthRepository.instance.completeIndividualProfile(
         firstName: _firstNameController.text.trim(),
         lastName: _lastNameController.text.trim(),
         phone: phoneLocal.isEmpty ? '' : '+20 $phoneLocal',
@@ -90,38 +92,27 @@ class _IndividualProfileScreenState extends State<IndividualProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Back + progress
                     Row(
                       children: [
                         GestureDetector(
                           onTap: () => Navigator.of(context).pop(),
-                          child: const Icon(
-                            Icons.arrow_back_ios,
-                            size: 20,
-                            color: Color(0xFF0F172A),
-                          ),
+                          child: const Icon(Icons.arrow_back_ios,
+                              size: 20, color: Color(0xFF0F172A)),
                         ),
                         const Expanded(
                           child: Center(
-                            child: _ProgressDots(
-                              currentStep: 1,
-                              totalSteps: 3,
-                            ),
+                            child: ProfileProgressDots(
+                                currentStep: 1, totalSteps: 3),
                           ),
                         ),
                         const SizedBox(width: 20),
                       ],
                     ),
                     const SizedBox(height: 28),
-
-                    // Role tag
                     Row(
                       children: [
-                        const Icon(
-                          Icons.person_outline,
-                          size: 14,
-                          color: Color(0xFF1A5C38),
-                        ),
+                        const Icon(Icons.person_outline,
+                            size: 14, color: Color(0xFF1A5C38)),
                         const SizedBox(width: 6),
                         Text(
                           'INDIVIDUAL ROLE',
@@ -135,7 +126,6 @@ class _IndividualProfileScreenState extends State<IndividualProfileScreen> {
                       ],
                     ),
                     const SizedBox(height: 10),
-
                     Text(
                       'Complete Profile',
                       style: GoogleFonts.inter(
@@ -146,7 +136,6 @@ class _IndividualProfileScreenState extends State<IndividualProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-
                     Text(
                       'Just a few more details to get started.',
                       style: GoogleFonts.inter(
@@ -157,8 +146,7 @@ class _IndividualProfileScreenState extends State<IndividualProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 28),
-
-                    _FormField(
+                    ProfileFormField(
                       label: 'First Name',
                       controller: _firstNameController,
                       hint: 'e.g. John',
@@ -166,8 +154,7 @@ class _IndividualProfileScreenState extends State<IndividualProfileScreen> {
                       keyboardType: TextInputType.name,
                     ),
                     const SizedBox(height: 20),
-
-                    _FormField(
+                    ProfileFormField(
                       label: 'Last Name',
                       controller: _lastNameController,
                       hint: 'e.g. Doe',
@@ -175,8 +162,7 @@ class _IndividualProfileScreenState extends State<IndividualProfileScreen> {
                       keyboardType: TextInputType.name,
                     ),
                     const SizedBox(height: 20),
-
-                    _FormField(
+                    ProfileFormField(
                       label: 'Phone Number',
                       controller: _phoneController,
                       hint: '10 0000 0000',
@@ -185,8 +171,6 @@ class _IndividualProfileScreenState extends State<IndividualProfileScreen> {
                       prefixText: '+20 ',
                     ),
                     const SizedBox(height: 20),
-
-                    // Birthdate — read-only tap-to-pick field
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -204,21 +188,17 @@ class _IndividualProfileScreenState extends State<IndividualProfileScreen> {
                           child: Container(
                             width: double.infinity,
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 16,
-                            ),
+                                horizontal: 12, vertical: 16),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                              border: Border.all(
+                                  color: const Color(0xFFE2E8F0)),
                             ),
                             child: Row(
                               children: [
-                                const Icon(
-                                  Icons.calendar_today_outlined,
-                                  size: 18,
-                                  color: Color(0xFF94A3B8),
-                                ),
+                                const Icon(Icons.calendar_today_outlined,
+                                    size: 18, color: Color(0xFF94A3B8)),
                                 const SizedBox(width: 12),
                                 Text(
                                   _birthdateDisplay,
@@ -240,8 +220,6 @@ class _IndividualProfileScreenState extends State<IndividualProfileScreen> {
                 ),
               ),
             ),
-
-            // Fixed bottom button
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
               child: SizedBox(
@@ -257,17 +235,14 @@ class _IndividualProfileScreenState extends State<IndividualProfileScreen> {
                     disabledForegroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                   child: _loading
                       ? const SizedBox(
                           width: 22,
                           height: 22,
                           child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Colors.white,
-                          ),
+                              strokeWidth: 2.5, color: Colors.white),
                         )
                       : Text(
                           'Complete Setup',
@@ -283,120 +258,6 @@ class _IndividualProfileScreenState extends State<IndividualProfileScreen> {
           ],
         ),
       ),
-    );
-  }
-}
-
-// ─── Form field with label + leading icon ─────────────────────────────────────
-
-class _FormField extends StatelessWidget {
-  final String label;
-  final TextEditingController controller;
-  final String hint;
-  final IconData icon;
-  final TextInputType keyboardType;
-  final String? prefixText;
-
-  const _FormField({
-    required this.label,
-    required this.controller,
-    required this.hint,
-    required this.icon,
-    this.keyboardType = TextInputType.text,
-    this.prefixText,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
-            color: const Color(0xFF0F172A),
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          keyboardType: keyboardType,
-          style: GoogleFonts.inter(
-            fontWeight: FontWeight.w400,
-            fontSize: 15,
-            color: const Color(0xFF0F172A),
-          ),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: GoogleFonts.inter(
-              fontWeight: FontWeight.w400,
-              fontSize: 15,
-              color: const Color(0xFFCBD5E1),
-            ),
-            prefixIcon: Icon(icon, size: 18, color: const Color(0xFF94A3B8)),
-            prefixText: prefixText,
-            prefixStyle: GoogleFonts.inter(
-              fontWeight: FontWeight.w500,
-              fontSize: 15,
-              color: const Color(0xFF0F172A),
-            ),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide:
-                  const BorderSide(color: Color(0xFF1A5C38), width: 1.5),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ─── Progress dots ────────────────────────────────────────────────────────────
-
-class _ProgressDots extends StatelessWidget {
-  final int currentStep;
-  final int totalSteps;
-
-  const _ProgressDots({required this.currentStep, required this.totalSteps});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(totalSteps, (i) {
-        final isActive = i == currentStep;
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 3),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: isActive ? 24 : 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: isActive
-                  ? const Color(0xFF1A5C38)
-                  : const Color(0xFFD9D9D9),
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-        );
-      }),
     );
   }
 }

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wafra_frontend/features/auth/presentation/pending_verification_screen.dart';
+import 'package:wafra_frontend/features/auth/data/auth_repository.dart';
 import 'package:wafra_frontend/core/network/api_service.dart';
+import 'widgets/profile_form_field.dart';
+import 'widgets/profile_progress_dots.dart';
 
 class FoodBankProfileScreen extends StatefulWidget {
   const FoodBankProfileScreen({super.key});
@@ -17,6 +20,8 @@ class _FoodBankProfileScreenState extends State<FoodBankProfileScreen> {
   final _phoneController = TextEditingController();
   final _locationController = TextEditingController();
   bool _loading = false;
+
+  static const _accent = Color(0xFF7C3AED);
 
   @override
   void dispose() {
@@ -42,7 +47,7 @@ class _FoodBankProfileScreenState extends State<FoodBankProfileScreen> {
     setState(() => _loading = true);
     try {
       final phoneLocal = _phoneController.text.trim();
-      await ApiService.instance.completeFoodBankProfile(
+      await AuthRepository.instance.completeFoodBankProfile(
         organizationName: orgName,
         registrationNumber: _regNumberController.text.trim(),
         phone: phoneLocal.isEmpty ? '' : '+20 $phoneLocal',
@@ -51,7 +56,8 @@ class _FoodBankProfileScreenState extends State<FoodBankProfileScreen> {
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
-            builder: (_) => const PendingVerificationScreen(role: 'foodbank')),
+            builder: (_) =>
+                const PendingVerificationScreen(role: 'foodbank')),
         (r) => false,
       );
     } on ApiException catch (e) {
@@ -89,7 +95,6 @@ class _FoodBankProfileScreenState extends State<FoodBankProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Back + progress
                     Row(
                       children: [
                         GestureDetector(
@@ -99,20 +104,21 @@ class _FoodBankProfileScreenState extends State<FoodBankProfileScreen> {
                         ),
                         const Expanded(
                           child: Center(
-                            child: _ProgressDots(
-                                currentStep: 1, totalSteps: 3),
+                            child: ProfileProgressDots(
+                              currentStep: 1,
+                              totalSteps: 3,
+                              activeColor: _accent,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 20),
                       ],
                     ),
                     const SizedBox(height: 28),
-
-                    // Role tag
                     Row(
                       children: [
                         const Icon(Icons.account_balance_outlined,
-                            size: 14, color: Color(0xFF7C3AED)),
+                            size: 14, color: _accent),
                         const SizedBox(width: 6),
                         Text(
                           'FOOD BANK ROLE',
@@ -120,13 +126,12 @@ class _FoodBankProfileScreenState extends State<FoodBankProfileScreen> {
                             fontWeight: FontWeight.w700,
                             fontSize: 11,
                             letterSpacing: 11 * 0.05,
-                            color: const Color(0xFF7C3AED),
+                            color: _accent,
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 10),
-
                     Text(
                       'Organisation Details',
                       style: GoogleFonts.inter(
@@ -137,7 +142,6 @@ class _FoodBankProfileScreenState extends State<FoodBankProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-
                     Text(
                       'Complete your profile to start collecting surplus food for your community.',
                       style: GoogleFonts.inter(
@@ -148,51 +152,49 @@ class _FoodBankProfileScreenState extends State<FoodBankProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 28),
-
-                    _FormField(
+                    ProfileFormField(
                       label: 'Organisation Name',
                       controller: _orgNameController,
                       hint: 'e.g. Cairo Food Bank',
                       icon: Icons.account_balance_outlined,
+                      focusColor: _accent,
                     ),
                     const SizedBox(height: 20),
-
-                    _FormField(
+                    ProfileFormField(
                       label: 'Official Registration Number',
                       controller: _regNumberController,
                       hint: 'NGO-123456',
                       icon: Icons.badge_outlined,
+                      focusColor: _accent,
                     ),
                     const SizedBox(height: 20),
-
-                    _FormField(
+                    ProfileFormField(
                       label: 'Contact Person Name',
                       controller: _contactController,
                       hint: 'Full name of coordinator',
                       icon: Icons.person_outline,
                       keyboardType: TextInputType.name,
+                      focusColor: _accent,
                     ),
                     const SizedBox(height: 20),
-
-                    _FormField(
+                    ProfileFormField(
                       label: 'Phone Number',
                       controller: _phoneController,
                       hint: '10 0000 0000',
                       icon: Icons.phone_outlined,
                       keyboardType: TextInputType.phone,
                       prefixText: '+20 ',
+                      focusColor: _accent,
                     ),
                     const SizedBox(height: 20),
-
-                    _FormField(
+                    ProfileFormField(
                       label: 'Service Area / Location',
                       controller: _locationController,
                       hint: 'e.g. Maadi, Cairo',
                       icon: Icons.location_on_outlined,
                       keyboardType: TextInputType.streetAddress,
+                      focusColor: _accent,
                     ),
-
-                    // Info note
                     const SizedBox(height: 20),
                     Container(
                       padding: const EdgeInsets.all(14),
@@ -204,7 +206,7 @@ class _FoodBankProfileScreenState extends State<FoodBankProfileScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Icon(Icons.info_outline,
-                              size: 18, color: Color(0xFF7C3AED)),
+                              size: 18, color: _accent),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
@@ -224,8 +226,6 @@ class _FoodBankProfileScreenState extends State<FoodBankProfileScreen> {
                 ),
               ),
             ),
-
-            // Fixed button
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
               child: SizedBox(
@@ -234,7 +234,7 @@ class _FoodBankProfileScreenState extends State<FoodBankProfileScreen> {
                 child: ElevatedButton(
                   onPressed: _loading ? null : _submit,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF7C3AED),
+                    backgroundColor: _accent,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
@@ -258,119 +258,6 @@ class _FoodBankProfileScreenState extends State<FoodBankProfileScreen> {
           ],
         ),
       ),
-    );
-  }
-}
-
-// ─── Reusable form field ──────────────────────────────────────────────────────
-
-class _FormField extends StatelessWidget {
-  final String label;
-  final TextEditingController controller;
-  final String hint;
-  final IconData icon;
-  final TextInputType keyboardType;
-  final String? prefixText;
-
-  const _FormField({
-    required this.label,
-    required this.controller,
-    required this.hint,
-    required this.icon,
-    this.keyboardType = TextInputType.text,
-    this.prefixText,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
-            color: const Color(0xFF0F172A),
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          keyboardType: keyboardType,
-          style: GoogleFonts.inter(
-            fontWeight: FontWeight.w400,
-            fontSize: 15,
-            color: const Color(0xFF0F172A),
-          ),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: GoogleFonts.inter(
-              fontWeight: FontWeight.w400,
-              fontSize: 15,
-              color: const Color(0xFFCBD5E1),
-            ),
-            prefixIcon:
-                Icon(icon, size: 18, color: const Color(0xFF94A3B8)),
-            prefixText: prefixText,
-            prefixStyle: GoogleFonts.inter(
-              fontWeight: FontWeight.w500,
-              fontSize: 15,
-              color: const Color(0xFF0F172A),
-            ),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16, vertical: 16),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide:
-                  const BorderSide(color: Color(0xFF7C3AED), width: 1.5),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ─── Progress dots ────────────────────────────────────────────────────────────
-
-class _ProgressDots extends StatelessWidget {
-  final int currentStep;
-  final int totalSteps;
-  const _ProgressDots(
-      {required this.currentStep, required this.totalSteps});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(totalSteps, (i) {
-        final isActive = i == currentStep;
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 3),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: isActive ? 24 : 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: isActive
-                  ? const Color(0xFF7C3AED)
-                  : const Color(0xFFD9D9D9),
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-        );
-      }),
     );
   }
 }
