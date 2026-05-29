@@ -6,11 +6,23 @@ class AuthRepository {
 
   String? get token => ApiService.instance.token;
 
-  Future<void> login(String email, String password) =>
+  Future<Map<String, dynamic>> login(String email, String password) =>
       ApiService.instance.login(email, password);
 
-  Future<void> register(String email, String password, String username) =>
+  Future<Map<String, dynamic>> register(String email, String password, String username) =>
       ApiService.instance.register(email, password, username);
+
+  Future<void> sendVerificationCode(int userId) =>
+      ApiService.instance.sendVerificationCode(userId);
+
+  Future<Map<String, dynamic>> verifyEmail(int userId, String code) =>
+      ApiService.instance.verifyEmail(userId, code);
+
+  Future<Map<String, dynamic>> forgotPassword(String email) =>
+      ApiService.instance.forgotPassword(email);
+
+  Future<void> resetPassword(int userId, String code, String newPassword) =>
+      ApiService.instance.resetPassword(userId, code, newPassword);
 
   Future<Map<String, dynamic>> getMe() => ApiService.instance.getMe();
 

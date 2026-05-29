@@ -6,11 +6,13 @@ import 'restaurant_listing_card.dart';
 class ActiveListingsSection extends StatelessWidget {
   final List<RestaurantListing> listings;
   final bool loading;
+  final void Function(RestaurantListing)? onTap;
 
   const ActiveListingsSection({
     super.key,
     required this.listings,
     this.loading = false,
+    this.onTap,
   });
 
   @override
@@ -70,7 +72,10 @@ class ActiveListingsSection extends StatelessWidget {
               child: Column(
                 children: [
                   for (int i = 0; i < listings.length; i++) ...[
-                    RestaurantListingCard(listing: listings[i]),
+                    GestureDetector(
+                      onTap: onTap != null ? () => onTap!(listings[i]) : null,
+                      child: RestaurantListingCard(listing: listings[i]),
+                    ),
                     if (i < listings.length - 1)
                       const Divider(height: 24, color: Color(0xFFF1F5F9)),
                   ],

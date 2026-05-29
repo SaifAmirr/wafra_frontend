@@ -5,6 +5,7 @@ import 'package:wafra_frontend/features/dashboard/data/dashboard_repository.dart
 import 'package:wafra_frontend/features/dashboard/domain/listing_model.dart';
 import 'package:wafra_frontend/features/dashboard/domain/activity_item.dart';
 import 'package:wafra_frontend/features/notifications/presentation/widgets/notification_bell.dart';
+import 'package:wafra_frontend/features/listings/presentation/edit_listing_screen.dart';
 import 'active_listings_section.dart';
 import 'sustainability_section.dart';
 import 'recent_activity_section.dart';
@@ -184,7 +185,17 @@ class RestaurantHomeTabState extends State<RestaurantHomeTab> {
             ),
             const SizedBox(height: 24),
             ActiveListingsSection(
-                listings: _listings, loading: _loading),
+              listings: _listings,
+              loading: _loading,
+              onTap: (listing) async {
+                final changed = await Navigator.of(context).push<bool>(
+                  MaterialPageRoute(
+                    builder: (_) => EditListingScreen(listing: listing),
+                  ),
+                );
+                if (changed == true) load();
+              },
+            ),
             const SizedBox(height: 24),
             RecentActivitySection(items: _recentActivities()),
           ],

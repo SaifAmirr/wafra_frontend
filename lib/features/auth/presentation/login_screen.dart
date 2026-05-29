@@ -8,6 +8,8 @@ import 'package:wafra_frontend/features/auth/presentation/pending_verification_s
 import 'package:wafra_frontend/features/dashboard/presentation/restaurant_dashboard_screen.dart';
 import 'package:wafra_frontend/features/auth/presentation/role_selection_screen.dart';
 import 'package:wafra_frontend/features/auth/presentation/signup_screen.dart';
+import 'package:wafra_frontend/features/auth/presentation/email_verification_screen.dart';
+import 'package:wafra_frontend/features/auth/presentation/forgot_password_screen.dart';
 import 'package:wafra_frontend/features/auth/data/auth_repository.dart';
 import 'package:wafra_frontend/core/network/api_service.dart';
 import 'widgets/auth_tab_switcher.dart';
@@ -42,7 +44,23 @@ class _LoginScreenState extends State<LoginScreen> {
     }
     setState(() => _loading = true);
     try {
-      await AuthRepository.instance.login(email, password);
+      final loginResult = await AuthRepository.instance.login(email, password);
+      if (!mounted) return;
+
+      // Email not yet verified — server sent a fresh code
+      if (loginResult['email_verified'] == false) {
+        final userId = loginResult['user_id'] as int;
+        final userEmail = loginResult['email'] as String? ?? email;
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (_) =>
+                EmailVerificationScreen(userId: userId, email: userEmail),
+          ),
+          (r) => false,
+        );
+        return;
+      }
+
       final me = await AuthRepository.instance.getMe();
       final user = me['user'] as Map<String, dynamic>?;
       final role = user?['role'] as String?;
@@ -173,7 +191,10 @@ class _LoginScreenState extends State<LoginScreen> {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () {},
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                        builder: (_) => const ForgotPasswordScreen()),
+                  ),
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 4, vertical: 11),
