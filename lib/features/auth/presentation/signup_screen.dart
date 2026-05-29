@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wafra_frontend/features/auth/presentation/login_screen.dart';
-import 'package:wafra_frontend/features/auth/presentation/role_selection_screen.dart';
+import 'package:wafra_frontend/features/auth/presentation/email_verification_screen.dart';
 import 'package:wafra_frontend/features/auth/data/auth_repository.dart';
 import 'package:wafra_frontend/core/network/api_service.dart';
 import 'widgets/auth_tab_switcher.dart';
@@ -19,7 +19,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmController = TextEditingController();
   bool _obscurePassword = true;
+  bool _obscureConfirm = true;
   bool _loading = false;
 
   @override
@@ -27,8 +29,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
     _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmController.dispose();
     super.dispose();
   }
+
+  bool _isStrongPassword(String p) =>
+      p.length >= 8 &&
+      p.contains(RegExp(r'[A-Z]')) &&
+      p.contains(RegExp(r'[a-z]')) &&
+      p.contains(RegExp(r'[0-9]')) &&
+      p.contains(RegExp(r'[!@#\$%^&*(),.?":{}|<>]'));
 
   Future<void> _register() async {
     final email = _emailController.text.trim();
@@ -42,15 +52,26 @@ class _SignUpScreenState extends State<SignUpScreen> {
       _showError('Please enter your email and password.');
       return;
     }
+    if (!_isStrongPassword(password)) {
+      _showError(
+          'Password must be at least 8 characters and include uppercase, lowercase, number, and special character.');
+      return;
+    }
+    if (password != _confirmController.text) {
+      _showError('Passwords do not match.');
+      return;
+    }
     setState(() => _loading = true);
     try {
-      await AuthRepository.instance.register(email, password, username);
-      if (AuthRepository.instance.token == null) {
-        await AuthRepository.instance.login(email, password);
-      }
+      final result = await AuthRepository.instance.register(email, password, username);
+      final userId = result['user_id'] as int;
       if (!mounted) return;
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (_) =>
+              EmailVerificationScreen(userId: userId, email: email),
+        ),
+        (r) => false,
       );
     } on ApiException catch (e) {
       _showError(e.message);
@@ -142,6 +163,32 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                   onPressed: () =>
                       setState(() => _obscurePassword = !_obscurePassword),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Min 8 chars · uppercase · lowercase · number · special character',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  color: const Color(0xFF94A3B8),
+                ),
+              ),
+              const SizedBox(height: 20),
+              AuthInputField(
+                controller: _confirmController,
+                label: 'CONFIRM PASSWORD',
+                hint: '••••••••',
+                obscureText: _obscureConfirm,
+                suffix: IconButton(
+                  icon: Icon(
+                    _obscureConfirm
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    color: const Color(0xFF94A3B8),
+                    size: 20,
+                  ),
+                  onPressed: () =>
+                      setState(() => _obscureConfirm = !_obscureConfirm),
                 ),
               ),
               const SizedBox(height: 32),

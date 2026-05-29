@@ -14,13 +14,10 @@ class PendingVerificationScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 28),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(28, 48, 28, 32),
           child: Column(
             children: [
-              const Spacer(flex: 2),
-
-              // Illustration
               Container(
                 width: 120,
                 height: 120,
@@ -35,7 +32,6 @@ class PendingVerificationScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 32),
-
               Text(
                 'Your account is\nbeing reviewed',
                 textAlign: TextAlign.center,
@@ -47,7 +43,6 @@ class PendingVerificationScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 14),
-
               Text(
                 isRestaurant
                     ? "We're verifying your trade licence. This usually takes up to 24 hours. We'll notify you by SMS and email once approved."
@@ -60,23 +55,14 @@ class PendingVerificationScreen extends StatelessWidget {
                   color: const Color(0xFF8E8E93),
                 ),
               ),
-
               const SizedBox(height: 40),
-
-              // Steps
-              _StepRow(
-                  number: 1, label: 'We review your details'),
+              _StepRow(number: 1, label: 'We review your details'),
               const SizedBox(height: 16),
               _StepRow(
-                  number: 2,
-                  label: 'You get an SMS / email confirmation'),
+                  number: 2, label: 'You get an SMS / email confirmation'),
               const SizedBox(height: 16),
-              _StepRow(
-                  number: 3, label: 'You can start using the app'),
-
-              const Spacer(flex: 3),
-
-              // Log out
+              _StepRow(number: 3, label: 'You can start using the app'),
+              const SizedBox(height: 48),
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -104,8 +90,6 @@ class PendingVerificationScreen extends StatelessWidget {
                   ),
                 ),
               ),
-
-              const SizedBox(height: 28),
             ],
           ),
         ),

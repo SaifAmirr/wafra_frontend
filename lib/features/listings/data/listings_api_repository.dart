@@ -22,6 +22,27 @@ class ListingsApiRepository {
           int reservationId, String pickupCode) =>
       ApiService.instance.confirmPickup(reservationId, pickupCode);
 
+  Future<Map<String, dynamic>> updateListing(
+    int id, {
+    String? foodName,
+    String? category,
+    int? quantity,
+    String? pickupTime,
+    String? location,
+    List<String>? dietaryTags,
+  }) =>
+      ApiService.instance.updateListing(
+        id,
+        foodName: foodName,
+        category: category,
+        quantity: quantity,
+        pickupTime: pickupTime,
+        location: location,
+        dietaryTags: dietaryTags,
+      );
+
+  Future<void> deleteListing(int id) => ApiService.instance.deleteListing(id);
+
   Future<void> createListing({
     required String foodName,
     required String category,

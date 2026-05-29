@@ -90,58 +90,69 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                   const SizedBox(width: 20),
                 ],
               ),
-              const SizedBox(height: 32),
-              Text(
-                'Choose your role',
-                style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 28,
-                  height: 34 / 28,
-                  color: const Color(0xFF0F172A),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 32),
+                      Text(
+                        'Choose your role',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 28,
+                          height: 34 / 28,
+                          color: const Color(0xFF0F172A),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Tell us how you want to use the app',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w400,
+                          fontSize: 14,
+                          height: 20 / 14,
+                          color: const Color(0xFF8E8E93),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      _RoleCard(
+                        title: 'Restaurant',
+                        subtitle: 'Donate surplus food and manage donations',
+                        icon: Icons.storefront_outlined,
+                        iconBg: const Color(0xFFF2F2F7),
+                        iconColor: const Color(0xFF64748B),
+                        selected: _selectedRole == UserRole.restaurant,
+                        onTap: () =>
+                            setState(() => _selectedRole = UserRole.restaurant),
+                      ),
+                      const SizedBox(height: 16),
+                      _RoleCard(
+                        title: 'Individual',
+                        subtitle: 'Find food nearby or share with neighbors',
+                        icon: Icons.person_outline,
+                        iconBg: const Color(0xFFEFF6FF),
+                        iconColor: const Color(0xFF3B82F6),
+                        selected: _selectedRole == UserRole.individual,
+                        onTap: () =>
+                            setState(() => _selectedRole = UserRole.individual),
+                      ),
+                      const SizedBox(height: 16),
+                      _RoleCard(
+                        title: 'Food Bank',
+                        subtitle: 'Coordinate large scale distributions',
+                        icon: Icons.volunteer_activism_outlined,
+                        iconBg: const Color(0xFFF5F3FF),
+                        iconColor: const Color(0xFF8B5CF6),
+                        selected: _selectedRole == UserRole.foodBank,
+                        onTap: () =>
+                            setState(() => _selectedRole = UserRole.foodBank),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Tell us how you want to use the app',
-                style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w400,
-                  fontSize: 14,
-                  height: 20 / 14,
-                  color: const Color(0xFF8E8E93),
-                ),
-              ),
-              const SizedBox(height: 32),
-              _RoleCard(
-                title: 'Restaurant',
-                subtitle: 'Donate surplus food and manage donations',
-                icon: Icons.storefront_outlined,
-                iconBg: const Color(0xFFF2F2F7),
-                iconColor: const Color(0xFF64748B),
-                selected: _selectedRole == UserRole.restaurant,
-                onTap: () => setState(() => _selectedRole = UserRole.restaurant),
-              ),
-              const SizedBox(height: 16),
-              _RoleCard(
-                title: 'Individual',
-                subtitle: 'Find food nearby or share with neighbors',
-                icon: Icons.person_outline,
-                iconBg: const Color(0xFFEFF6FF),
-                iconColor: const Color(0xFF3B82F6),
-                selected: _selectedRole == UserRole.individual,
-                onTap: () =>
-                    setState(() => _selectedRole = UserRole.individual),
-              ),
-              const SizedBox(height: 16),
-              _RoleCard(
-                title: 'Food Bank',
-                subtitle: 'Coordinate large scale distributions',
-                icon: Icons.volunteer_activism_outlined,
-                iconBg: const Color(0xFFF5F3FF),
-                iconColor: const Color(0xFF8B5CF6),
-                selected: _selectedRole == UserRole.foodBank,
-                onTap: () => setState(() => _selectedRole = UserRole.foodBank),
-              ),
-              const Spacer(),
               SizedBox(
                 width: double.infinity,
                 height: 56,

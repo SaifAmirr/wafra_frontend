@@ -58,9 +58,7 @@ class ApiService {
       body: jsonEncode(
           {'email': email, 'password': password, 'username': username}),
     );
-    final body = await _handle(res);
-    _updateToken(body);
-    return body;
+    return _handle(res);
   }
 
   Future<Map<String, dynamic>> login(String email, String password) async {
@@ -70,7 +68,7 @@ class ApiService {
       body: jsonEncode({'email': email, 'password': password}),
     );
     final body = await _handle(res);
-    _updateToken(body);
+    _updateToken(body); // no-op if email not verified (no token in response)
     return body;
   }
 
@@ -80,6 +78,44 @@ class ApiService {
     _token = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_kTokenKey);
+  }
+
+  Future<void> sendVerificationCode(int userId) async {
+    final res = await _client.post(
+      Uri.parse('$_base/auth/send-verification'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'user_id': userId}),
+    );
+    await _handle(res);
+  }
+
+  Future<Map<String, dynamic>> verifyEmail(int userId, String code) async {
+    final res = await _client.post(
+      Uri.parse('$_base/auth/verify-email'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'user_id': userId, 'code': code}),
+    );
+    final body = await _handle(res);
+    _updateToken(body);
+    return body;
+  }
+
+  Future<Map<String, dynamic>> forgotPassword(String email) async {
+    final res = await _client.post(
+      Uri.parse('$_base/auth/forgot-password'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email}),
+    );
+    return _handle(res);
+  }
+
+  Future<void> resetPassword(int userId, String code, String newPassword) async {
+    final res = await _client.post(
+      Uri.parse('$_base/auth/reset-password'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'user_id': userId, 'code': code, 'new_password': newPassword}),
+    );
+    await _handle(res);
   }
 
   Future<Map<String, dynamic>> chooseRole(String role) async {
@@ -196,6 +232,38 @@ class ApiService {
     );
     final body = await _handle(res);
     return (body['listings'] as List?) ?? [];
+  }
+
+  Future<Map<String, dynamic>> updateListing(
+    int id, {
+    String? foodName,
+    String? category,
+    int? quantity,
+    String? pickupTime,
+    String? location,
+    List<String>? dietaryTags,
+  }) async {
+    final res = await _client.put(
+      Uri.parse('$_base/listings/$id'),
+      headers: _authHeaders,
+      body: jsonEncode(<String, dynamic>{
+        if (foodName != null) 'food_name': foodName,
+        if (category != null) 'category': category,
+        if (quantity != null) 'quantity': quantity,
+        if (pickupTime != null) 'pickup_time': pickupTime,
+        if (location != null) 'location': location,
+        if (dietaryTags != null) 'dietary_tags': dietaryTags,
+      }),
+    );
+    return _handle(res);
+  }
+
+  Future<void> deleteListing(int id) async {
+    final res = await _client.delete(
+      Uri.parse('$_base/listings/$id'),
+      headers: _authHeaders,
+    );
+    await _handle(res);
   }
 
   Future<Map<String, dynamic>> createListing({

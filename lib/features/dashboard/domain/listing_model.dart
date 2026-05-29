@@ -1,20 +1,30 @@
 enum ListingStatus { active, pending }
 
 class RestaurantListing {
+  final int listingId;
   final String name;
+  final String category;
   final int quantity;
   final ListingStatus status;
   final String timeDetail;
   final String listedAgo;
   final int reservationCount;
+  final DateTime? pickupTime;
+  final String location;
+  final List<String> dietaryTags;
 
   const RestaurantListing({
+    required this.listingId,
     required this.name,
+    required this.category,
     required this.quantity,
     required this.status,
     required this.timeDetail,
     required this.listedAgo,
     this.reservationCount = 0,
+    this.pickupTime,
+    this.location = '',
+    this.dietaryTags = const [],
   });
 }
 
@@ -23,11 +33,13 @@ RestaurantListing restaurantListingFromJson(Map<String, dynamic> j) {
       ? ListingStatus.active
       : ListingStatus.pending;
 
-  String timeDetail = '';
   final rawTime = j['pickup_time'] as String?;
+  DateTime? pickupTime;
+  String timeDetail = '';
   if (rawTime != null) {
     try {
       final dt = DateTime.parse(rawTime);
+      pickupTime = dt;
       final diff = dt.difference(DateTime.now());
       if (status == ListingStatus.active) {
         timeDetail = diff.isNegative
@@ -56,11 +68,19 @@ RestaurantListing restaurantListingFromJson(Map<String, dynamic> j) {
   }
 
   return RestaurantListing(
+    listingId: j['listing_id'] as int? ?? 0,
     name: j['food_name'] as String? ?? '',
+    category: j['category'] as String? ?? '',
     quantity: j['quantity'] as int? ?? 0,
     status: status,
     timeDetail: timeDetail,
     listedAgo: listedAgo,
     reservationCount: j['reservation_count'] as int? ?? 0,
+    pickupTime: pickupTime,
+    location: j['location'] as String? ?? '',
+    dietaryTags: (j['dietary_tags'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        [],
   );
 }
