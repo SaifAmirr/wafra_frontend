@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wafra_frontend/features/auth/presentation/login_screen.dart';
 import 'package:wafra_frontend/features/dashboard/data/dashboard_repository.dart';
+import 'package:wafra_frontend/features/dashboard/presentation/widgets/profile/language_dialog.dart';
+import 'package:wafra_frontend/features/dashboard/presentation/widgets/profile/legal_sheet.dart';
+import 'package:wafra_frontend/features/notifications/presentation/widgets/notification_prefs_sheet.dart';
+import 'package:wafra_frontend/features/support/presentation/widgets/support_dialog.dart';
 
 class ProfileSettings extends StatelessWidget {
   final Color accent;
@@ -22,32 +26,32 @@ class ProfileSettings extends StatelessWidget {
           _SettingRow(
             icon: Icons.notifications_outlined,
             label: 'Notification Preferences',
-            onTap: () {},
+            onTap: () => showNotificationPrefsSheet(context, accent),
           ),
           const Divider(height: 1, indent: 56, color: Color(0xFFE2E8F0)),
           _SettingRow(
             icon: Icons.language_outlined,
             label: 'Language',
             trailing: 'English',
-            onTap: () {},
+            onTap: () => showLanguageDialog(context, accent),
           ),
           const Divider(height: 1, indent: 56, color: Color(0xFFE2E8F0)),
           _SettingRow(
             icon: Icons.privacy_tip_outlined,
             label: 'Privacy Policy',
-            onTap: () {},
+            onTap: () => showPrivacyPolicy(context, accent),
           ),
           const Divider(height: 1, indent: 56, color: Color(0xFFE2E8F0)),
           _SettingRow(
             icon: Icons.article_outlined,
             label: 'Terms of Service',
-            onTap: () {},
+            onTap: () => showTermsOfService(context, accent),
           ),
           const Divider(height: 1, indent: 56, color: Color(0xFFE2E8F0)),
           _SettingRow(
             icon: Icons.help_outline,
             label: 'Help & Support',
-            onTap: () {},
+            onTap: () => showSupportDialog(context, accent),
           ),
           const Divider(height: 1, indent: 56, color: Color(0xFFE2E8F0)),
           _SettingRow(

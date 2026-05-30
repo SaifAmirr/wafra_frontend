@@ -56,6 +56,11 @@ class AdminBottomNav extends StatelessWidget {
             selectedIcon: Icon(Icons.list_alt),
             label: 'Listings',
           ),
+          NavigationDestination(
+            icon: Icon(Icons.support_agent_outlined),
+            selectedIcon: Icon(Icons.support_agent),
+            label: 'Tickets',
+          ),
         ],
       ),
     );
