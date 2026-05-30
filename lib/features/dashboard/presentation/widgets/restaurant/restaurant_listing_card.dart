@@ -63,20 +63,7 @@ class RestaurantListingCard extends StatelessWidget {
             _StatusBadge(status: listing.status),
             const SizedBox(height: 10),
             if (isActive && listing.reservationCount > 0)
-              _ReservationAvatars(count: listing.reservationCount)
-            else if (!isActive)
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFECFDF5),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                      color: const Color(0xFF1A5C38), width: 1.5),
-                ),
-                child: const Icon(Icons.check,
-                    size: 14, color: Color(0xFF1A5C38)),
-              ),
+              _ReservationAvatars(count: listing.reservationCount),
           ],
         ),
       ],
@@ -91,24 +78,45 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isActive = status == ListingStatus.active;
+    final Color bg;
+    final Color fg;
+    final String label;
+
+    switch (status) {
+      case ListingStatus.active:
+        bg = const Color(0xFFECFDF5);
+        fg = const Color(0xFF1A5C38);
+        label = 'ACTIVE';
+        break;
+      case ListingStatus.reserved:
+        bg = const Color(0xFFFFF7ED);
+        fg = const Color(0xFFF59E0B);
+        label = 'RESERVED';
+        break;
+      case ListingStatus.completed:
+        bg = const Color(0xFFEFF6FF);
+        fg = const Color(0xFF3B82F6);
+        label = 'COMPLETED';
+        break;
+      default:
+        bg = const Color(0xFFFFF7ED);
+        fg = const Color(0xFFF59E0B);
+        label = 'PENDING';
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: isActive
-            ? const Color(0xFFECFDF5)
-            : const Color(0xFFFFF7ED),
+        color: bg,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        isActive ? 'ACTIVE' : 'PENDING',
+        label,
         style: GoogleFonts.inter(
           fontWeight: FontWeight.w700,
           fontSize: 10,
           letterSpacing: 0.5,
-          color: isActive
-              ? const Color(0xFF1A5C38)
-              : const Color(0xFFF59E0B),
+          color: fg,
         ),
       ),
     );

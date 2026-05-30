@@ -1,4 +1,4 @@
-enum ListingStatus { active, pending }
+enum ListingStatus { active, pending, reserved, completed }
 
 class RestaurantListing {
   final int listingId;
@@ -29,9 +29,21 @@ class RestaurantListing {
 }
 
 RestaurantListing restaurantListingFromJson(Map<String, dynamic> j) {
-  final status = (j['status'] as String?) == 'available'
-      ? ListingStatus.active
-      : ListingStatus.pending;
+  final rawStatus = (j['status'] as String?) ?? 'available';
+  final ListingStatus status;
+  switch (rawStatus) {
+    case 'available':
+      status = ListingStatus.active;
+      break;
+    case 'reserved':
+      status = ListingStatus.reserved;
+      break;
+    case 'completed':
+      status = ListingStatus.completed;
+      break;
+    default:
+      status = ListingStatus.pending;
+  }
 
   final rawTime = j['pickup_time'] as String?;
   DateTime? pickupTime;
@@ -41,12 +53,13 @@ RestaurantListing restaurantListingFromJson(Map<String, dynamic> j) {
       final dt = DateTime.parse(rawTime);
       pickupTime = dt;
       final diff = dt.difference(DateTime.now());
-      if (status == ListingStatus.active) {
-        timeDetail = diff.isNegative
+      timeDetail = diff.isNegative
             ? 'Pickup time passed'
             : 'Expires in ${diff.inHours}h ${diff.inMinutes % 60}m';
-      } else {
+      if (status == ListingStatus.reserved) {
         timeDetail = 'Driver arriving soon';
+      } else if (status == ListingStatus.completed) {
+        timeDetail = 'Picked up';
       }
     } catch (_) {}
   }

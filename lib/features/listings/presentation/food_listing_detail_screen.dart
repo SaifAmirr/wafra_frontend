@@ -350,7 +350,7 @@ class _FoodListingDetailScreenState extends State<FoodListingDetailScreen> {
               child: ElevatedButton(
                 onPressed: _reserving ? null : _reserve,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1A5C38),
+                  backgroundColor: const Color(0xFF2563EB),
                   foregroundColor: Colors.white,
                   minimumSize: const Size(double.infinity, 56),
                   elevation: 0,

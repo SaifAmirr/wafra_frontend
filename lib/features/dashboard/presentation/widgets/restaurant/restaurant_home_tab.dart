@@ -187,7 +187,9 @@ class RestaurantHomeTabState extends State<RestaurantHomeTab> {
             ),
             const SizedBox(height: 24),
             ActiveListingsSection(
-              listings: _listings,
+              listings: _listings
+                  .where((l) => l.status == ListingStatus.active)
+                  .toList(),
               loading: _loading,
               onTap: (listing) async {
                 final changed = await Navigator.of(context).push<bool>(
