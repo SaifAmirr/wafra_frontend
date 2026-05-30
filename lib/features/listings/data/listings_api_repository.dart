@@ -19,8 +19,9 @@ class ListingsApiRepository {
       ApiService.instance.generatePickup(reservationId);
 
   Future<Map<String, dynamic>> confirmPickup(
-          int reservationId, String pickupCode) =>
-      ApiService.instance.confirmPickup(reservationId, pickupCode);
+          String pickupCode, {int? reservationId}) =>
+      ApiService.instance.confirmPickup(pickupCode,
+          reservationId: reservationId);
 
   Future<Map<String, dynamic>> updateListing(
     int id, {

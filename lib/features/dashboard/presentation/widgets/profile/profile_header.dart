@@ -17,8 +17,10 @@ class ProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final topInset = MediaQuery.of(context).padding.top;
+
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 56, 20, 24),
+      padding: EdgeInsets.fromLTRB(20, topInset + 16, 20, 24),
       color: Colors.white,
       child: Row(
         children: [

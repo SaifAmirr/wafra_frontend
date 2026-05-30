@@ -85,11 +85,15 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final topPad = (size.height * 0.055).clamp(24.0, 56.0);
+    final vGap = (size.height * 0.03).clamp(16.0, 32.0);
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 48, 24, 40),
+          padding: EdgeInsets.fromLTRB(24, topPad, 24, 40),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -98,7 +102,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 child: const Icon(Icons.arrow_back_ios,
                     size: 20, color: Color(0xFF0F172A)),
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: vGap),
               Text(
                 'Reset Password',
                 style: GoogleFonts.inter(

@@ -106,22 +106,28 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final topPad = (size.height * 0.055).clamp(24.0, 56.0);
+    final iconSize = (size.width * 0.18).clamp(48.0, 72.0);
+    final titleFontSize = (size.width * 0.065).clamp(20.0, 26.0);
+    final vGap = (size.height * 0.025).clamp(14.0, 24.0);
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 48, 24, 40),
+          padding: EdgeInsets.fromLTRB(24, topPad, 24, 40),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Icon(Icons.mark_email_unread_outlined,
-                  size: 72, color: Color(0xFF1A5C38)),
-              const SizedBox(height: 24),
+              Icon(Icons.mark_email_unread_outlined,
+                  size: iconSize, color: const Color(0xFF1A5C38)),
+              SizedBox(height: vGap),
               Text(
                 'Check your email',
                 style: GoogleFonts.inter(
                   fontWeight: FontWeight.w700,
-                  fontSize: 26,
+                  fontSize: titleFontSize,
                   color: const Color(0xFF0F172A),
                 ),
               ),

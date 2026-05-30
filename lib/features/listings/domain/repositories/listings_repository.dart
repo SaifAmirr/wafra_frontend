@@ -11,4 +11,5 @@ abstract class ListingsRepository {
     required String location,
     List<String>? dietaryTags,
   });
+  Future<void> confirmPickup(String pickupCode, {int? reservationId});
 }

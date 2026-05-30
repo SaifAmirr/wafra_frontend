@@ -107,11 +107,13 @@ class _OnboardingPage extends StatelessWidget {
       children: [
         // Full-bleed background image (logo + photo + title + subtitle +
         // dots + CTA are all part of the asset).
+        // BoxFit.fill ensures every pixel of the image maps to the screen
+        // so baked-in content (titles, dots, CTA) stays correctly placed
+        // on all screen sizes without any clipping or scrolling.
         Positioned.fill(
           child: Image.asset(
             imageAsset,
-            fit: BoxFit.cover,
-            alignment: Alignment.topCenter,
+            fit: BoxFit.fill,
             errorBuilder: (_, _, _) => Container(
               color: const Color(0xFF1A5C38),
               alignment: Alignment.center,

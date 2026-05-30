@@ -164,6 +164,8 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen>
         ),
         bottom: TabBar(
           controller: _tabController,
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
           labelColor: const Color(0xFF1A5C38),
           unselectedLabelColor: const Color(0xFF8E8E93),
           indicatorColor: const Color(0xFF1A5C38),

@@ -105,7 +105,8 @@ class _FoodBankHomeTabState extends State<FoodBankHomeTab> {
         slivers: [
           SliverToBoxAdapter(
             child: Container(
-              padding: const EdgeInsets.fromLTRB(20, 56, 20, 20),
+              padding: EdgeInsets.fromLTRB(
+                  20, MediaQuery.of(context).padding.top + 16, 20, 20),
               decoration: const BoxDecoration(
                 color: _kPurple,
                 borderRadius:

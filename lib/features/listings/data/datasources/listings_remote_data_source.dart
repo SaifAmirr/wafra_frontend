@@ -52,4 +52,15 @@ class ListingsRemoteDataSource {
       throw const AppFailure('Could not create listing.');
     }
   }
+
+  Future<void> confirmPickup(String pickupCode, {int? reservationId}) async {
+    try {
+      await ApiService.instance.confirmPickup(pickupCode,
+          reservationId: reservationId);
+    } on ApiException catch (e) {
+      throw AppFailure(e.message);
+    } catch (_) {
+      throw const AppFailure('Could not confirm pickup. Please try again.');
+    }
+  }
 }

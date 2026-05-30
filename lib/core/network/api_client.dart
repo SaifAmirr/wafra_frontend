@@ -4,9 +4,7 @@ class ApiClient {
   ApiClient._();
   static final ApiClient instance = ApiClient._();
 
-  // localhost:5000 for Flutter Web / physical machine.
-  // Change to http://10.0.2.2:5000 when running on an Android emulator.
-  static const String baseUrl = 'http://localhost:5000';
+  static const String baseUrl = 'https://wafrabackend-production.up.railway.app';
 
   final Dio dio = Dio(
     BaseOptions(

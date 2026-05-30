@@ -119,28 +119,34 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final logoSize = (size.width * 0.28).clamp(80.0, 120.0);
+    final topPad = (size.height * 0.055).clamp(24.0, 56.0);
+    final titleFontSize = (size.width * 0.075).clamp(22.0, 30.0);
+    final vGap = (size.height * 0.03).clamp(16.0, 32.0);
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 48, 24, 40),
+          padding: EdgeInsets.fromLTRB(24, topPad, 24, 40),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SvgPicture.asset(
                 'assets/images/splash_food_illustration.svg',
-                width: 120,
-                height: 120,
+                width: logoSize,
+                height: logoSize,
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: vGap * 0.6),
               Text(
                 'Welcome',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(
                   fontWeight: FontWeight.w700,
-                  fontSize: 30,
+                  fontSize: titleFontSize,
                   height: 36 / 30,
-                  letterSpacing: 30 * -0.025,
+                  letterSpacing: titleFontSize * -0.025,
                   color: const Color(0xFF0F172A),
                 ),
               ),
@@ -155,14 +161,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   color: const Color(0xFF8E8E93),
                 ),
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: vGap),
               AuthTabSwitcher(
                 showLogin: true,
                 onOtherTap: () => Navigator.of(context).pushReplacement(
                   MaterialPageRoute(builder: (_) => const SignUpScreen()),
                 ),
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: vGap),
               AuthInputField(
                 controller: _emailController,
                 label: 'EMAIL ADDRESS',

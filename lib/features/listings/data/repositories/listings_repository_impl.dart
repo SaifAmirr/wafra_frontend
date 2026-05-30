@@ -30,4 +30,8 @@ class ListingsRepositoryImpl implements ListingsRepository {
         location: location,
         dietaryTags: dietaryTags,
       );
+
+  @override
+  Future<void> confirmPickup(String pickupCode, {int? reservationId}) =>
+      _dataSource.confirmPickup(pickupCode, reservationId: reservationId);
 }

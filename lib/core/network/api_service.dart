@@ -11,9 +11,7 @@ class ApiService {
 
   final http.Client _client;
 
-  // Web: localhost (browser); Android emulator: 10.0.2.2 (host loopback)
-  static final String _base =
-      isWebPlatform ? 'http://localhost:5000' : 'http://10.0.2.2:5000';
+  static const String _base = 'https://wafrabackend-production.up.railway.app';
 
   String? _token;
   String? get token => _token;
@@ -380,13 +378,13 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> confirmPickup(
-      int reservationId, String pickupCode) async {
+      String pickupCode, {int? reservationId}) async {
     final res = await _client.post(
       Uri.parse('$_base/pickups/confirm'),
       headers: _authHeaders,
-      body: jsonEncode({
-        'reservation_id': reservationId,
+      body: jsonEncode(<String, dynamic>{
         'pickup_code': pickupCode,
+        if (reservationId != null) 'reservation_id': reservationId,
       }),
     );
     return _handle(res);

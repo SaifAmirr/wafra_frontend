@@ -95,6 +95,8 @@ class _OrdersTabState extends State<OrdersTab>
         ),
         bottom: TabBar(
           controller: _tc,
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
           labelColor: _kPurple,
           unselectedLabelColor: const Color(0xFF8E8E93),
           indicatorColor: _kPurple,

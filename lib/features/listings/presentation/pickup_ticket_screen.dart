@@ -65,11 +65,14 @@ class _PickupTicketScreenState extends State<PickupTicketScreen> {
     return Scaffold(
       backgroundColor: const Color(0xCC0F172A),
       body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: Center(
             child: _loading
-                ? const CircularProgressIndicator(color: Colors.white)
+                ? const Padding(
+                    padding: EdgeInsets.only(top: 80),
+                    child: CircularProgressIndicator(color: Colors.white),
+                  )
                 : _error != null
                     ? Column(
                         mainAxisSize: MainAxisSize.min,
@@ -114,6 +117,12 @@ class _TicketCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    // Available card width = screenWidth - 48px (24px padding each side)
+    final cardInner = screenWidth - 48;
+    final qrSize = (cardInner * 0.55).clamp(140.0, 180.0);
+    final codeFontSize = (screenWidth * 0.07).clamp(20.0, 28.0);
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -163,13 +172,13 @@ class _TicketCard extends StatelessWidget {
               color: const Color(0xFF94A3B8),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
           // QR code
           Container(
-            width: 180,
-            height: 180,
-            padding: const EdgeInsets.all(12),
+            width: qrSize,
+            height: qrSize,
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               border: Border.all(color: const Color(0xFFE2E8F0)),
               borderRadius: BorderRadius.circular(12),
@@ -177,12 +186,12 @@ class _TicketCard extends StatelessWidget {
             child: QrImageView(
               data: qrData,
               version: QrVersions.auto,
-              size: 156,
+              size: qrSize - 20,
               backgroundColor: Colors.white,
             ),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
           // Pickup code label
           Text(
@@ -198,7 +207,7 @@ class _TicketCard extends StatelessWidget {
           Text(
             pickupCode,
             style: GoogleFonts.inter(
-              fontSize: 28,
+              fontSize: codeFontSize,
               fontWeight: FontWeight.w800,
               letterSpacing: 6,
               color: const Color(0xFF0F172A),

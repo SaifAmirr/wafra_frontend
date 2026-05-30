@@ -166,12 +166,14 @@ class RestaurantHomeTabState extends State<RestaurantHomeTab> {
 
   @override
   Widget build(BuildContext context) {
+    final topInset = MediaQuery.of(context).padding.top;
+
     return RefreshIndicator(
       onRefresh: load,
       color: const Color(0xFF1A5C38),
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 110),
+        padding: EdgeInsets.fromLTRB(20, topInset + 12, 20, 110),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
