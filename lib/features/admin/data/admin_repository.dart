@@ -1,4 +1,5 @@
 import 'package:wafra_frontend/core/network/api_service.dart';
+import 'package:wafra_frontend/features/support/domain/entities/support_ticket.dart';
 
 class AdminRepository {
   AdminRepository._();
@@ -30,4 +31,14 @@ class AdminRepository {
 
   Future<void> declineReservation(int id) =>
       ApiService.instance.declineReservation(id);
+
+  Future<List<SupportTicket>> getSupportTickets() async {
+    final raw = await ApiService.instance.getAdminSupportTickets();
+    return raw
+        .map((e) => SupportTicket.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> resolveTicket(int ticketId) =>
+      ApiService.instance.resolveAdminSupportTicket(ticketId);
 }

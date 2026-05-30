@@ -3,6 +3,7 @@ import 'widgets/admin_bottom_nav.dart';
 import 'widgets/overview_tab.dart';
 import 'widgets/users_tab.dart';
 import 'widgets/listings_tab.dart';
+import 'widgets/tickets_tab.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -24,6 +25,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           OverviewTab(),
           UsersTab(),
           ListingsTab(),
+          TicketsTab(),
         ],
       ),
       bottomNavigationBar: AdminBottomNav(

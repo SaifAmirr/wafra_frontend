@@ -441,6 +441,37 @@ class ApiService {
     );
     _handle(res);
   }
+
+  // ─── Support Tickets ────────────────────────────────────────────────────────
+
+  Future<void> submitSupportTicket({
+    required String subject,
+    required String message,
+  }) async {
+    final res = await _client.post(
+      Uri.parse('$_base/support/tickets'),
+      headers: _authHeaders,
+      body: jsonEncode({'subject': subject, 'message': message}),
+    );
+    await _handle(res);
+  }
+
+  Future<List<dynamic>> getAdminSupportTickets() async {
+    final res = await _client.get(
+      Uri.parse('$_base/admin/support/tickets'),
+      headers: _authHeaders,
+    );
+    final body = await _handle(res);
+    return (body['tickets'] as List?) ?? [];
+  }
+
+  Future<void> resolveAdminSupportTicket(int ticketId) async {
+    final res = await _client.patch(
+      Uri.parse('$_base/admin/support/tickets/$ticketId/resolve'),
+      headers: _authHeaders,
+    );
+    await _handle(res);
+  }
 }
 
 class ApiException implements Exception {
