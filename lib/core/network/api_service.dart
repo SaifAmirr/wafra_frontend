@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wafra_frontend/core/constants/api_constants.dart';
 import 'package:wafra_frontend/core/errors/app_failure.dart';
@@ -292,7 +293,13 @@ class ApiService {
       if (dietaryTags != null && dietaryTags.isNotEmpty) {
         req.fields['dietary_tags'] = jsonEncode(dietaryTags);
       }
-      req.files.add(await http.MultipartFile.fromPath('photo', photoPath));
+      final ext = photoPath.split('.').last.toLowerCase();
+      final subtype = ext == 'png' ? 'png' : ext == 'webp' ? 'webp' : 'jpeg';
+      req.files.add(await http.MultipartFile.fromPath(
+        'photo',
+        photoPath,
+        contentType: MediaType('image', subtype),
+      ));
       final streamed = await req.send();
       final res = await http.Response.fromStream(streamed);
       return _handle(res);

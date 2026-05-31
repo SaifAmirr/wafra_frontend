@@ -13,6 +13,7 @@ class FoodListing {
   final String category;
   final String description;
   final List<String> tags;
+  final String? photoUrl;
 
   const FoodListing({
     this.listingId,
@@ -27,6 +28,7 @@ class FoodListing {
     required this.category,
     required this.description,
     required this.tags,
+    this.photoUrl,
   });
 
   factory FoodListing.fromJson(Map<String, dynamic> json) {
@@ -67,6 +69,7 @@ class FoodListing {
       category: json['category'] as String? ?? '',
       description: json['description'] as String? ?? '',
       tags: tags,
+      photoUrl: json['photo_url'] as String?,
     );
   }
 

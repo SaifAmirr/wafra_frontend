@@ -79,18 +79,17 @@ class _FoodListingDetailScreenState extends State<FoodListingDetailScreen> {
                 // ── Hero image ──────────────────────────────────────────────
                 Stack(
                   children: [
-                    // Placeholder image
-                    Container(
-                      height: 280,
-                      width: double.infinity,
-                      color: listing.imageBg,
-                      child: Icon(
-                        listing.imageIcon,
-                        size: 110,
-                        color:
-                            listing.imageIconColor.withValues(alpha: 0.3),
-                      ),
-                    ),
+                    // Hero image — real photo or category placeholder
+                    listing.photoUrl != null
+                        ? Image.network(
+                            listing.photoUrl!,
+                            height: 280,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stack) =>
+                                _PlaceholderHero(listing: listing),
+                          )
+                        : _PlaceholderHero(listing: listing),
 
                     // Top action buttons
                     Positioned(
@@ -384,6 +383,27 @@ class _FoodListingDetailScreenState extends State<FoodListingDetailScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─── Placeholder hero ─────────────────────────────────────────────────────────
+
+class _PlaceholderHero extends StatelessWidget {
+  final FoodListing listing;
+  const _PlaceholderHero({required this.listing});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 280,
+      width: double.infinity,
+      color: listing.imageBg,
+      child: Icon(
+        listing.imageIcon,
+        size: 110,
+        color: listing.imageIconColor.withValues(alpha: 0.3),
       ),
     );
   }
