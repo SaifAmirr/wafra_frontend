@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:wafra_frontend/features/dashboard/data/dashboard_repository.dart';
 import 'package:wafra_frontend/core/constants/app_colors.dart';
+import 'package:wafra_frontend/core/errors/app_failure.dart';
+import 'package:wafra_frontend/features/dashboard/data/dashboard_repository.dart';
 import 'package:wafra_frontend/features/listings/domain/entities/food_listing.dart';
 import 'package:wafra_frontend/features/listings/presentation/food_listing_detail_screen.dart';
 import 'package:wafra_frontend/features/notifications/presentation/widgets/notification_bell.dart';
@@ -24,7 +25,9 @@ class _FoodBankHomeTabState extends State<FoodBankHomeTab> {
   Map<String, dynamic>? _me;
   List<FoodListing> _available = [];
   List<Map<String, dynamic>> _allReservations = [];
+  final Map<int, int> _quantities = {};
   bool _loading = false;
+  bool _reserving = false;
 
   @override
   void initState() {
@@ -50,6 +53,8 @@ class _FoodBankHomeTabState extends State<FoodBankHomeTab> {
             .take(5)
             .toList();
         _allReservations = (results[2] as List).cast<Map<String, dynamic>>();
+        _quantities.removeWhere(
+            (id, _) => !_available.any((l) => l.listingId == id));
       });
     } catch (_) {
     } finally {
@@ -72,6 +77,38 @@ class _FoodBankHomeTabState extends State<FoodBankHomeTab> {
       .where((s) => s.isNotEmpty)
       .toSet()
       .length;
+
+  int get _selectedCount => _quantities.values.where((q) => q > 0).length;
+
+  Future<void> _reserve() async {
+    final selected = _quantities.entries.where((e) => e.value > 0).toList();
+    if (selected.isEmpty) return;
+    setState(() => _reserving = true);
+    try {
+      await Future.wait(
+        selected.map((e) =>
+            DashboardRepository.instance.createReservation(e.key, e.value)),
+      );
+      if (!mounted) return;
+      setState(() => _quantities.clear());
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              '${selected.length} reservation${selected.length == 1 ? '' : 's'} submitted!'),
+          backgroundColor: _kPurple,
+        ),
+      );
+      widget.onGoOrders?.call();
+      _load();
+    } on AppFailure catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message), backgroundColor: Colors.red.shade700),
+      );
+    } finally {
+      if (mounted) setState(() => _reserving = false);
+    }
+  }
 
   Future<void> _openDetail(FoodListing listing) async {
     final reserved = await Navigator.of(context).push<bool>(
@@ -99,7 +136,9 @@ class _FoodBankHomeTabState extends State<FoodBankHomeTab> {
 
   @override
   Widget build(BuildContext context) {
-    return RefreshIndicator(
+    return Stack(
+      children: [
+      RefreshIndicator(
       onRefresh: _load,
       color: _kPurple,
       child: CustomScrollView(
@@ -213,10 +252,17 @@ class _FoodBankHomeTabState extends State<FoodBankHomeTab> {
             else
               SliverList(
                 delegate: SliverChildBuilderDelegate(
-                  (_, i) => CompactListingCard(
-                    listing: _available[i],
-                    onTap: () => _openDetail(_available[i]),
-                  ),
+                  (_, i) {
+                    final listing = _available[i];
+                    final id = listing.listingId ?? i;
+                    return CompactListingCard(
+                      listing: listing,
+                      qty: _quantities[id] ?? 0,
+                      onQtyChanged: (q) =>
+                          setState(() => _quantities[id] = q),
+                      onTap: () => _openDetail(listing),
+                    );
+                  },
                   childCount: _available.length,
                 ),
               ),
@@ -251,10 +297,47 @@ class _FoodBankHomeTabState extends State<FoodBankHomeTab> {
                   childCount: _activeOrders.length,
                 ),
               ),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            SliverToBoxAdapter(
+                child: SizedBox(height: _selectedCount > 0 ? 90 : 24)),
           ],
         ],
       ),
+      ),
+      if (_selectedCount > 0)
+        Positioned(
+          bottom: 16,
+          left: 16,
+          right: 16,
+          child: SizedBox(
+            height: 56,
+            child: ElevatedButton.icon(
+              onPressed: _reserving ? null : _reserve,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _kPurple,
+                foregroundColor: Colors.white,
+                elevation: 6,
+                shadowColor: _kPurple.withValues(alpha: 0.4),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(28)),
+              ),
+              icon: _reserving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.volunteer_activism, size: 20),
+              label: Text(
+                _reserving
+                    ? 'Reserving...'
+                    : 'Reserve Selected ($_selectedCount item${_selectedCount == 1 ? '' : 's'})',
+                style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w700, fontSize: 16),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
