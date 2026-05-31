@@ -26,7 +26,7 @@ class AuthRemoteDataSource {
   ) async {
     try {
       final res = await ApiService.instance.register(email, password, username);
-      return User.fromJson(res['user'] as Map<String, dynamic>? ?? {});
+      return User.fromJson(res['user'] as Map<String, dynamic>? ?? res);
     } on AppFailure {
       rethrow;
     } catch (_) {
