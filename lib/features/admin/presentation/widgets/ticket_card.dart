@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:wafra_frontend/core/utils/date_utils.dart';
 import 'package:wafra_frontend/features/support/domain/entities/support_ticket.dart';
 import 'action_button.dart';
 import 'admin_colors.dart';
@@ -114,7 +115,7 @@ class TicketCard extends StatelessWidget {
           Row(
             children: [
               Text(
-                _formatDate(ticket.createdAt),
+                AppDateUtils.formatMonthDayYear(ticket.createdAt),
                 style: GoogleFonts.inter(
                   fontSize: 11,
                   color: const Color(0xFF94A3B8),
@@ -135,11 +136,4 @@ class TicketCard extends StatelessWidget {
     );
   }
 
-  String _formatDate(DateTime dt) {
-    final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-    ];
-    return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
-  }
 }

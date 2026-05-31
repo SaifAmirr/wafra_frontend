@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:wafra_frontend/core/utils/date_utils.dart';
 import 'package:wafra_frontend/features/listings/presentation/explore_screen.dart';
-import 'package:wafra_frontend/features/auth/data/auth_repository.dart';
+import 'package:wafra_frontend/features/auth/providers/auth_providers.dart';
 import 'widgets/profile_form_field.dart';
 import 'widgets/profile_progress_dots.dart';
 
@@ -53,13 +54,12 @@ class _IndividualProfileScreenState extends State<IndividualProfileScreen> {
     setState(() => _loading = true);
     try {
       final phoneLocal = _phoneController.text.trim();
-      await AuthRepository.instance.completeIndividualProfile(
+      await AuthProviders.completeIndividualProfileUseCase.execute(
         firstName: _firstNameController.text.trim(),
         lastName: _lastNameController.text.trim(),
         phone: phoneLocal.isEmpty ? '' : '+20 $phoneLocal',
-        birthdate: _birthdate != null
-            ? '${_birthdate!.year}-${_birthdate!.month.toString().padLeft(2, '0')}-${_birthdate!.day.toString().padLeft(2, '0')}'
-            : null,
+        birthdate:
+            _birthdate != null ? AppDateUtils.formatApiDate(_birthdate!) : null,
       );
     } catch (_) {
       // Profile save is best-effort; user is already authenticated so proceed.
@@ -72,12 +72,9 @@ class _IndividualProfileScreenState extends State<IndividualProfileScreen> {
     );
   }
 
-  String get _birthdateDisplay {
-    if (_birthdate == null) return 'DD / MM / YYYY';
-    return '${_birthdate!.day.toString().padLeft(2, '0')} / '
-        '${_birthdate!.month.toString().padLeft(2, '0')} / '
-        '${_birthdate!.year}';
-  }
+  String get _birthdateDisplay => _birthdate == null
+      ? 'DD / MM / YYYY'
+      : AppDateUtils.formatDisplayDate(_birthdate!);
 
   @override
   Widget build(BuildContext context) {

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wafra_frontend/features/auth/presentation/pending_verification_screen.dart';
-import 'package:wafra_frontend/features/auth/data/auth_repository.dart';
-import 'package:wafra_frontend/core/network/api_service.dart';
+import 'package:wafra_frontend/core/errors/app_failure.dart';
+import 'package:wafra_frontend/features/auth/providers/auth_providers.dart';
+import 'package:wafra_frontend/core/errors/app_failure.dart';
 import 'widgets/profile_form_field.dart';
 import 'widgets/profile_progress_dots.dart';
 
@@ -47,7 +48,7 @@ class _FoodBankProfileScreenState extends State<FoodBankProfileScreen> {
     setState(() => _loading = true);
     try {
       final phoneLocal = _phoneController.text.trim();
-      await AuthRepository.instance.completeFoodBankProfile(
+      await AuthProviders.completeFoodBankProfileUseCase.execute(
         organizationName: orgName,
         registrationNumber: _regNumberController.text.trim(),
         phone: phoneLocal.isEmpty ? '' : '+20 $phoneLocal',
@@ -60,7 +61,7 @@ class _FoodBankProfileScreenState extends State<FoodBankProfileScreen> {
                 const PendingVerificationScreen(role: 'foodbank')),
         (r) => false,
       );
-    } on ApiException catch (e) {
+    } on AppFailure catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

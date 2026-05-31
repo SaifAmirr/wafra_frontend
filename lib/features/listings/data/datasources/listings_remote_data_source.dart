@@ -9,8 +9,8 @@ class ListingsRemoteDataSource {
       return raw
           .map((j) => FoodListing.fromJson(j as Map<String, dynamic>))
           .toList();
-    } on ApiException catch (e) {
-      throw AppFailure(e.message);
+    } on AppFailure {
+      rethrow;
     } catch (_) {
       throw const AppFailure('Could not load listings.');
     }
@@ -22,8 +22,8 @@ class ListingsRemoteDataSource {
       return raw
           .map((j) => FoodListing.fromJson(j as Map<String, dynamic>))
           .toList();
-    } on ApiException catch (e) {
-      throw AppFailure(e.message);
+    } on AppFailure {
+      rethrow;
     } catch (_) {
       throw const AppFailure('Could not load your listings.');
     }
@@ -46,8 +46,8 @@ class ListingsRemoteDataSource {
         location: location,
         dietaryTags: dietaryTags,
       );
-    } on ApiException catch (e) {
-      throw AppFailure(e.message);
+    } on AppFailure {
+      rethrow;
     } catch (_) {
       throw const AppFailure('Could not create listing.');
     }
@@ -57,8 +57,8 @@ class ListingsRemoteDataSource {
     try {
       await ApiService.instance.confirmPickup(pickupCode,
           reservationId: reservationId);
-    } on ApiException catch (e) {
-      throw AppFailure(e.message);
+    } on AppFailure {
+      rethrow;
     } catch (_) {
       throw const AppFailure('Could not confirm pickup. Please try again.');
     }

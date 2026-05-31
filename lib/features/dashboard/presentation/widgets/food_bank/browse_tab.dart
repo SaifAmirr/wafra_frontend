@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:wafra_frontend/core/network/api_service.dart';
+import 'package:wafra_frontend/core/errors/app_failure.dart';
 import 'package:wafra_frontend/features/dashboard/data/dashboard_repository.dart';
 import 'package:wafra_frontend/features/listings/domain/entities/food_listing.dart';
 import 'browse_card.dart';
@@ -89,7 +89,7 @@ class _BrowseTabState extends State<BrowseTab> {
         ),
       );
       _load();
-    } on ApiException catch (e) {
+    } on AppFailure catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

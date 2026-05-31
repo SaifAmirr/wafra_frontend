@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:wafra_frontend/core/network/api_service.dart';
+import 'package:wafra_frontend/core/errors/app_failure.dart';
 import 'package:wafra_frontend/features/dashboard/data/dashboard_repository.dart';
 import 'package:wafra_frontend/features/listings/presentation/pickup_ticket_screen.dart';
 import 'food_bank_order_card.dart';
@@ -59,7 +59,7 @@ class _OrdersTabState extends State<OrdersTab>
     try {
       await DashboardRepository.instance.cancelReservation(id);
       _load();
-    } on ApiException catch (e) {
+    } on AppFailure catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

@@ -3,8 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:wafra_frontend/features/auth/presentation/food_bank_profile_screen.dart';
 import 'package:wafra_frontend/features/auth/presentation/individual_profile_screen.dart';
 import 'package:wafra_frontend/features/auth/presentation/restaurant_profile_screen.dart';
-import 'package:wafra_frontend/features/auth/data/auth_repository.dart';
-import 'package:wafra_frontend/core/network/api_service.dart';
+import 'package:wafra_frontend/core/errors/app_failure.dart';
+import 'package:wafra_frontend/features/auth/providers/auth_providers.dart';
+import 'package:wafra_frontend/core/errors/app_failure.dart';
 import 'widgets/profile_progress_dots.dart';
 
 enum UserRole { restaurant, individual, foodBank }
@@ -30,7 +31,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
     if (_selectedRole == null) return;
     setState(() => _loading = true);
     try {
-      await AuthRepository.instance.chooseRole(_roleStrings[_selectedRole]!);
+      await AuthProviders.chooseRoleUseCase.execute(_roleStrings[_selectedRole]!);
       if (!mounted) return;
       switch (_selectedRole) {
         case UserRole.restaurant:
@@ -47,7 +48,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
           );
         case null:
       }
-    } on ApiException catch (e) {
+    } on AppFailure catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text(e.message),

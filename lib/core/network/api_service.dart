@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:wafra_frontend/core/constants/api_constants.dart';
+import 'package:wafra_frontend/core/errors/app_failure.dart';
 import 'http_client.dart';
 
 const _kTokenKey = 'auth_token';
@@ -11,7 +13,7 @@ class ApiService {
 
   final http.Client _client;
 
-  static const String _base = 'https://wafrabackend-production.up.railway.app';
+  static const String _base = ApiConstants.baseUrl;
 
   String? _token;
   String? get token => _token;
@@ -40,7 +42,7 @@ class ApiService {
   Future<Map<String, dynamic>> _handle(http.Response res) async {
     final body = jsonDecode(res.body) as Map<String, dynamic>;
     if (res.statusCode >= 200 && res.statusCode < 300) return body;
-    throw ApiException(
+    throw AppFailure(
         body['message'] as String? ??
         body['error'] as String? ??
         'Request failed (${res.statusCode})');
@@ -474,10 +476,3 @@ class ApiService {
   }
 }
 
-class ApiException implements Exception {
-  final String message;
-  const ApiException(this.message);
-
-  @override
-  String toString() => message;
-}

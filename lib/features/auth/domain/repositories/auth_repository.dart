@@ -3,6 +3,10 @@ import '../entities/user.dart';
 abstract class AuthRepository {
   Future<User> login(String email, String password);
   Future<User> register(String username, String email, String password);
+  Future<void> sendVerificationCode(int userId);
+  Future<User> verifyEmail(int userId, String code);
+  Future<User> forgotPassword(String email);
+  Future<void> resetPassword(int userId, String code, String newPassword);
   Future<void> chooseRole(String role);
   Future<void> completeRestaurantProfile({
     required String restaurantName,
