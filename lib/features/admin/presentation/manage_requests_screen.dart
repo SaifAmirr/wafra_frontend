@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:wafra_frontend/core/network/api_service.dart';
+import 'package:wafra_frontend/core/errors/app_failure.dart';
 import 'package:wafra_frontend/features/listings/presentation/pickup_scan_screen.dart';
 import '../data/admin_repository.dart';
 import 'widgets/empty_requests.dart';
@@ -72,7 +72,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen>
     try {
       await AdminRepository.instance.acceptReservation(id);
       _load();
-    } on ApiException catch (e) {
+    } on AppFailure catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -87,7 +87,7 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen>
     try {
       await AdminRepository.instance.declineReservation(id);
       _load();
-    } on ApiException catch (e) {
+    } on AppFailure catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

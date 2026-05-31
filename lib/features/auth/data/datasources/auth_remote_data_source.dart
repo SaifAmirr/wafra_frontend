@@ -1,30 +1,77 @@
 import 'package:wafra_frontend/core/errors/app_failure.dart';
 import 'package:wafra_frontend/core/network/api_service.dart';
+import '../../domain/entities/user.dart';
 
 class AuthRemoteDataSource {
   const AuthRemoteDataSource();
 
-  Future<Map<String, dynamic>> login(String email, String password) async {
+  Future<User> login(String email, String password) async {
     try {
       final res = await ApiService.instance.login(email, password);
-      return res['user'] as Map<String, dynamic>? ?? {};
-    } on ApiException catch (e) {
-      throw AppFailure(e.message);
+      // When email is not verified the server returns user data at the top
+      // level (no 'user' key). When verified it is nested under 'user'.
+      final userJson = res['user'] as Map<String, dynamic>? ?? res;
+      return User.fromJson(userJson);
+    } on AppFailure {
+      rethrow;
     } catch (_) {
       throw const AppFailure('Could not connect to the server.');
     }
   }
 
-  Future<Map<String, dynamic>> register(
+  Future<User> register(
     String username,
     String email,
     String password,
   ) async {
     try {
       final res = await ApiService.instance.register(email, password, username);
-      return res['user'] as Map<String, dynamic>? ?? {};
-    } on ApiException catch (e) {
-      throw AppFailure(e.message);
+      return User.fromJson(res['user'] as Map<String, dynamic>? ?? {});
+    } on AppFailure {
+      rethrow;
+    } catch (_) {
+      throw const AppFailure('Could not connect to the server.');
+    }
+  }
+
+  Future<void> sendVerificationCode(int userId) async {
+    try {
+      await ApiService.instance.sendVerificationCode(userId);
+    } on AppFailure {
+      rethrow;
+    } catch (_) {
+      throw const AppFailure('Could not connect to the server.');
+    }
+  }
+
+  Future<User> verifyEmail(int userId, String code) async {
+    try {
+      final res = await ApiService.instance.verifyEmail(userId, code);
+      return User.fromJson(res['user'] as Map<String, dynamic>? ?? res);
+    } on AppFailure {
+      rethrow;
+    } catch (_) {
+      throw const AppFailure('Could not connect to the server.');
+    }
+  }
+
+  Future<User> forgotPassword(String email) async {
+    try {
+      final res = await ApiService.instance.forgotPassword(email);
+      return User.fromJson(res);
+    } on AppFailure {
+      rethrow;
+    } catch (_) {
+      throw const AppFailure('Could not connect to the server.');
+    }
+  }
+
+  Future<void> resetPassword(
+      int userId, String code, String newPassword) async {
+    try {
+      await ApiService.instance.resetPassword(userId, code, newPassword);
+    } on AppFailure {
+      rethrow;
     } catch (_) {
       throw const AppFailure('Could not connect to the server.');
     }
@@ -33,8 +80,8 @@ class AuthRemoteDataSource {
   Future<void> chooseRole(String role) async {
     try {
       await ApiService.instance.chooseRole(role);
-    } on ApiException catch (e) {
-      throw AppFailure(e.message);
+    } on AppFailure {
+      rethrow;
     } catch (_) {
       throw const AppFailure('Could not connect to the server.');
     }
@@ -55,8 +102,8 @@ class AuthRemoteDataSource {
         phone: phone,
         businessLicenseNumber: businessLicenseNumber,
       );
-    } on ApiException catch (e) {
-      throw AppFailure(e.message);
+    } on AppFailure {
+      rethrow;
     } catch (_) {
       throw const AppFailure('Could not connect to the server.');
     }
@@ -75,8 +122,8 @@ class AuthRemoteDataSource {
         phone: phone,
         birthdate: birthdate,
       );
-    } on ApiException catch (e) {
-      throw AppFailure(e.message);
+    } on AppFailure {
+      rethrow;
     } catch (_) {
       throw const AppFailure('Could not connect to the server.');
     }
@@ -95,19 +142,19 @@ class AuthRemoteDataSource {
         phone: phone,
         location: location,
       );
-    } on ApiException catch (e) {
-      throw AppFailure(e.message);
+    } on AppFailure {
+      rethrow;
     } catch (_) {
       throw const AppFailure('Could not connect to the server.');
     }
   }
 
-  Future<Map<String, dynamic>> getMe() async {
+  Future<User> getMe() async {
     try {
       final res = await ApiService.instance.getMe();
-      return res['user'] as Map<String, dynamic>? ?? {};
-    } on ApiException catch (e) {
-      throw AppFailure(e.message);
+      return User.fromJson(res['user'] as Map<String, dynamic>? ?? {});
+    } on AppFailure {
+      rethrow;
     } catch (_) {
       throw const AppFailure('Could not connect to the server.');
     }

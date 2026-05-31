@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:wafra_frontend/core/utils/date_utils.dart';
 import 'detail_row.dart';
 
 class RequestDetailsSheet extends StatelessWidget {
@@ -7,22 +8,8 @@ class RequestDetailsSheet extends StatelessWidget {
 
   const RequestDetailsSheet({super.key, required this.data});
 
-  String _fmtPickup(String? iso) {
-    if (iso == null) return '—';
-    try {
-      final dt = DateTime.parse(iso);
-      final h = dt.hour > 12
-          ? dt.hour - 12
-          : dt.hour == 0
-              ? 12
-              : dt.hour;
-      final m = dt.minute.toString().padLeft(2, '0');
-      final ap = dt.hour >= 12 ? 'PM' : 'AM';
-      return '${dt.day}/${dt.month}/${dt.year}  ·  $h:$m $ap';
-    } catch (_) {
-      return '—';
-    }
-  }
+  String _fmtPickup(String? iso) =>
+      AppDateUtils.formatPickupDateTimeFromIso(iso);
 
   @override
   Widget build(BuildContext context) {

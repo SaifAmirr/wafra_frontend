@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:wafra_frontend/core/network/api_service.dart';
-import 'package:wafra_frontend/features/auth/data/auth_repository.dart';
+import 'package:wafra_frontend/core/errors/app_failure.dart';
+import 'package:wafra_frontend/features/auth/providers/auth_providers.dart';
 import 'package:wafra_frontend/features/auth/presentation/role_selection_screen.dart';
 import 'package:wafra_frontend/features/admin/presentation/admin_dashboard_screen.dart';
 import 'package:wafra_frontend/features/dashboard/presentation/restaurant_dashboard_screen.dart';
@@ -44,13 +44,12 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     }
     setState(() => _loading = true);
     try {
-      final result = await AuthRepository.instance.verifyEmail(widget.userId, code);
-      final user = result['user'] as Map<String, dynamic>?;
-      final role = user?['role'] as String?;
-      final status = user?['verification_status'] as String?;
+      final user = await AuthProviders.verifyEmailUseCase.execute(widget.userId, code);
+      final role = user.role;
+      final status = user.verificationStatus;
       if (!mounted) return;
       _routeAfterVerification(role, status);
-    } on ApiException catch (e) {
+    } on AppFailure catch (e) {
       _showError(e.message);
     } catch (_) {
       _showError('Could not connect to server.');
@@ -83,7 +82,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   Future<void> _resend() async {
     setState(() => _resending = true);
     try {
-      await AuthRepository.instance.sendVerificationCode(widget.userId);
+      await AuthProviders.sendVerificationCodeUseCase.execute(widget.userId);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

@@ -5,17 +5,28 @@ import '../domain/usecases/choose_role_use_case.dart';
 import '../domain/usecases/complete_food_bank_profile_use_case.dart';
 import '../domain/usecases/complete_individual_profile_use_case.dart';
 import '../domain/usecases/complete_restaurant_profile_use_case.dart';
+import '../domain/usecases/forgot_password_use_case.dart';
 import '../domain/usecases/get_me_use_case.dart';
 import '../domain/usecases/login_use_case.dart';
 import '../domain/usecases/register_use_case.dart';
+import '../domain/usecases/reset_password_use_case.dart';
+import '../domain/usecases/send_verification_code_use_case.dart';
+import '../domain/usecases/verify_email_use_case.dart';
 
 class AuthProviders {
-  static final AuthRemoteDataSource _dataSource = const AuthRemoteDataSource();
-
-  static final AuthRepository repository = AuthRepositoryImpl(_dataSource);
+  static final AuthRepository repository =
+      AuthRepositoryImpl(const AuthRemoteDataSource());
 
   static final LoginUseCase loginUseCase = LoginUseCase(repository);
   static final RegisterUseCase registerUseCase = RegisterUseCase(repository);
+  static final SendVerificationCodeUseCase sendVerificationCodeUseCase =
+      SendVerificationCodeUseCase(repository);
+  static final VerifyEmailUseCase verifyEmailUseCase =
+      VerifyEmailUseCase(repository);
+  static final ForgotPasswordUseCase forgotPasswordUseCase =
+      ForgotPasswordUseCase(repository);
+  static final ResetPasswordUseCase resetPasswordUseCase =
+      ResetPasswordUseCase(repository);
   static final ChooseRoleUseCase chooseRoleUseCase =
       ChooseRoleUseCase(repository);
   static final CompleteRestaurantProfileUseCase

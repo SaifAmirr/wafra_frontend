@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:wafra_frontend/core/network/api_service.dart';
-import 'package:wafra_frontend/features/auth/data/auth_repository.dart';
+import 'package:wafra_frontend/core/errors/app_failure.dart';
+import 'package:wafra_frontend/features/auth/providers/auth_providers.dart';
 import 'reset_password_screen.dart';
 import 'widgets/auth_input_field.dart';
 
@@ -30,15 +30,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     }
     setState(() => _loading = true);
     try {
-      final result = await AuthRepository.instance.forgotPassword(email);
-      final userId = result['user_id'] as int;
+      final user = await AuthProviders.forgotPasswordUseCase.execute(email);
+      final userId = user.userId!;
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => ResetPasswordScreen(userId: userId, email: email),
         ),
       );
-    } on ApiException catch (e) {
+    } on AppFailure catch (e) {
       _showError(e.message);
     } catch (_) {
       _showError('Could not connect to server.');

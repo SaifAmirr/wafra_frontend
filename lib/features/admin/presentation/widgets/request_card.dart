@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:wafra_frontend/core/utils/date_utils.dart';
 
 class RequestCard extends StatelessWidget {
   final Map<String, dynamic> data;
@@ -28,20 +29,8 @@ class RequestCard extends StatelessWidget {
   }
 
   String _fmtPickup(String? iso) {
-    if (iso == null) return '';
-    try {
-      final dt = DateTime.parse(iso);
-      final h = dt.hour > 12
-          ? dt.hour - 12
-          : dt.hour == 0
-              ? 12
-              : dt.hour;
-      final m = dt.minute.toString().padLeft(2, '0');
-      final ap = dt.hour >= 12 ? 'PM' : 'AM';
-      return 'Pickup $h:$m $ap';
-    } catch (_) {
-      return '';
-    }
+    final t = AppDateUtils.formatPickupTimeFromIso(iso);
+    return t.isEmpty ? '' : 'Pickup $t';
   }
 
   @override

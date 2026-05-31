@@ -10,8 +10,8 @@ import 'package:wafra_frontend/features/auth/presentation/role_selection_screen.
 import 'package:wafra_frontend/features/auth/presentation/signup_screen.dart';
 import 'package:wafra_frontend/features/auth/presentation/email_verification_screen.dart';
 import 'package:wafra_frontend/features/auth/presentation/forgot_password_screen.dart';
-import 'package:wafra_frontend/features/auth/data/auth_repository.dart';
-import 'package:wafra_frontend/core/network/api_service.dart';
+import 'package:wafra_frontend/core/errors/app_failure.dart';
+import 'package:wafra_frontend/features/auth/providers/auth_providers.dart';
 import 'widgets/auth_tab_switcher.dart';
 import 'widgets/auth_input_field.dart';
 
@@ -44,13 +44,13 @@ class _LoginScreenState extends State<LoginScreen> {
     }
     setState(() => _loading = true);
     try {
-      final loginResult = await AuthRepository.instance.login(email, password);
+      final loginUser =
+          await AuthProviders.loginUseCase.execute(email, password);
       if (!mounted) return;
 
-      // Email not yet verified — server sent a fresh code
-      if (loginResult['email_verified'] == false) {
-        final userId = loginResult['user_id'] as int;
-        final userEmail = loginResult['email'] as String? ?? email;
+      if (loginUser.isEmailVerified == false) {
+        final userId = loginUser.userId!;
+        final userEmail = loginUser.email ?? email;
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
             builder: (_) =>
@@ -61,10 +61,9 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      final me = await AuthRepository.instance.getMe();
-      final user = me['user'] as Map<String, dynamic>?;
-      final role = user?['role'] as String?;
-      final status = user?['verification_status'] as String?;
+      final me = await AuthProviders.getMeUseCase.execute();
+      final role = me.role;
+      final status = me.verificationStatus;
       if (!mounted) return;
       if (role == null) {
         Navigator.of(context).pushAndRemoveUntil(
@@ -102,7 +101,7 @@ class _LoginScreenState extends State<LoginScreen> {
           (r) => false,
         );
       }
-    } on ApiException catch (e) {
+    } on AppFailure catch (e) {
       _showError(e.message);
     } catch (_) {
       _showError('Could not connect to server.');
@@ -245,19 +244,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             height: 27 / 18,
                           ),
                         ),
-                ),
-              ),
-              const SizedBox(height: 4),
-              TextButton(
-                onPressed: () {},
-                child: Text(
-                  'Or continue with Email',
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    height: 21 / 14,
-                    color: const Color(0xFF1A5C38),
-                  ),
                 ),
               ),
               const SizedBox(height: 24),

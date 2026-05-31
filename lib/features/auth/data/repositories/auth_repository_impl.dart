@@ -7,16 +7,28 @@ class AuthRepositoryImpl implements AuthRepository {
   const AuthRepositoryImpl(this._dataSource);
 
   @override
-  Future<User> login(String email, String password) async {
-    final json = await _dataSource.login(email, password);
-    return User.fromJson(json);
-  }
+  Future<User> login(String email, String password) =>
+      _dataSource.login(email, password);
 
   @override
-  Future<User> register(String username, String email, String password) async {
-    final json = await _dataSource.register(username, email, password);
-    return User.fromJson(json);
-  }
+  Future<User> register(String username, String email, String password) =>
+      _dataSource.register(username, email, password);
+
+  @override
+  Future<void> sendVerificationCode(int userId) =>
+      _dataSource.sendVerificationCode(userId);
+
+  @override
+  Future<User> verifyEmail(int userId, String code) =>
+      _dataSource.verifyEmail(userId, code);
+
+  @override
+  Future<User> forgotPassword(String email) =>
+      _dataSource.forgotPassword(email);
+
+  @override
+  Future<void> resetPassword(int userId, String code, String newPassword) =>
+      _dataSource.resetPassword(userId, code, newPassword);
 
   @override
   Future<void> chooseRole(String role) => _dataSource.chooseRole(role);
@@ -66,8 +78,5 @@ class AuthRepositoryImpl implements AuthRepository {
       );
 
   @override
-  Future<User> getMe() async {
-    final json = await _dataSource.getMe();
-    return User.fromJson(json);
-  }
+  Future<User> getMe() => _dataSource.getMe();
 }

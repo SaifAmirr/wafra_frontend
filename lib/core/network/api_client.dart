@@ -1,10 +1,11 @@
 import 'package:dio/dio.dart';
+import 'package:wafra_frontend/core/constants/api_constants.dart';
 
 class ApiClient {
   ApiClient._();
   static final ApiClient instance = ApiClient._();
 
-  static const String baseUrl = 'https://wafrabackend-production.up.railway.app';
+  static const String baseUrl = ApiConstants.baseUrl;
 
   final Dio dio = Dio(
     BaseOptions(

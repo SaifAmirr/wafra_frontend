@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:wafra_frontend/core/errors/app_failure.dart';
 import 'package:wafra_frontend/core/network/api_service.dart';
 import 'package:wafra_frontend/features/listings/domain/entities/food_listing.dart';
 
@@ -34,7 +35,7 @@ class _FoodListingDetailScreenState extends State<FoodListingDetailScreen> {
       // can switch to the Reservations / Orders tab.
       Navigator.of(context).pop(true);
       return;
-    } on ApiException catch (e) {
+    } on AppFailure catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

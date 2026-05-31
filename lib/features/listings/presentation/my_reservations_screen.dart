@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:wafra_frontend/core/network/api_service.dart';
+import 'package:wafra_frontend/core/errors/app_failure.dart';
 import 'package:wafra_frontend/features/listings/data/listings_api_repository.dart';
 import 'widgets/reservations/reservation_tab_bar.dart';
 import 'widgets/reservations/reservation_card.dart';
@@ -82,7 +82,7 @@ class _MyReservationsScreenState extends State<MyReservationsScreen>
     try {
       await ListingsApiRepository.instance.cancelReservation(id);
       _load();
-    } on ApiException catch (e) {
+    } on AppFailure catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

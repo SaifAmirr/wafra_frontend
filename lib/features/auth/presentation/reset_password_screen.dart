@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:wafra_frontend/core/network/api_service.dart';
-import 'package:wafra_frontend/features/auth/data/auth_repository.dart';
+import 'package:wafra_frontend/core/errors/app_failure.dart';
+import 'package:wafra_frontend/features/auth/providers/auth_providers.dart';
 import 'login_screen.dart';
 import 'widgets/auth_input_field.dart';
 
@@ -56,7 +56,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
     setState(() => _loading = true);
     try {
-      await AuthRepository.instance.resetPassword(widget.userId, code, password);
+      await AuthProviders.resetPasswordUseCase.execute(widget.userId, code, password);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -68,7 +68,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         MaterialPageRoute(builder: (_) => const LoginScreen()),
         (r) => false,
       );
-    } on ApiException catch (e) {
+    } on AppFailure catch (e) {
       _showError(e.message);
     } catch (_) {
       _showError('Could not connect to server.');

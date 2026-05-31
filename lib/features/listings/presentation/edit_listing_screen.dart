@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:wafra_frontend/core/network/api_service.dart';
+import 'package:wafra_frontend/core/errors/app_failure.dart';
+import 'package:wafra_frontend/core/utils/date_utils.dart';
 import 'package:wafra_frontend/features/dashboard/domain/listing_model.dart';
 import 'package:wafra_frontend/features/listings/data/listings_api_repository.dart';
 import 'widgets/post_surplus/section_label.dart';
@@ -149,7 +150,7 @@ class _EditListingScreenState extends State<EditListingScreen> {
         ),
       );
       Navigator.of(context).pop(true);
-    } on ApiException catch (e) {
+    } on AppFailure catch (e) {
       _showError(e.message);
     } catch (_) {
       _showError('Could not connect to server.');
@@ -192,7 +193,7 @@ class _EditListingScreenState extends State<EditListingScreen> {
       await ListingsApiRepository.instance.deleteListing(widget.listing.listingId);
       if (!mounted) return;
       Navigator.of(context).pop(true);
-    } on ApiException catch (e) {
+    } on AppFailure catch (e) {
       _showError(e.message);
     } catch (_) {
       _showError('Could not connect to server.');
@@ -207,19 +208,13 @@ class _EditListingScreenState extends State<EditListingScreen> {
     );
   }
 
-  String get _dateDisplay {
-    if (_pickupDate == null) return 'Select date';
-    return '${_pickupDate!.day.toString().padLeft(2, '0')} / '
-        '${_pickupDate!.month.toString().padLeft(2, '0')} / '
-        '${_pickupDate!.year}';
-  }
+  String get _dateDisplay => _pickupDate == null
+      ? 'Select date'
+      : AppDateUtils.formatDisplayDate(_pickupDate!);
 
-  String get _timeDisplay {
-    if (_pickupTime == null) return 'Select time';
-    final h = _pickupTime!.hour.toString().padLeft(2, '0');
-    final m = _pickupTime!.minute.toString().padLeft(2, '0');
-    return '$h:$m';
-  }
+  String get _timeDisplay => _pickupTime == null
+      ? 'Select time'
+      : AppDateUtils.formatDisplayTime(_pickupTime!);
 
   @override
   Widget build(BuildContext context) {

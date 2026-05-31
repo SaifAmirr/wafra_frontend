@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:wafra_frontend/core/network/api_service.dart';
+import 'package:wafra_frontend/core/errors/app_failure.dart';
 import '../data/listings_api_repository.dart';
 
 class PickupTicketScreen extends StatefulWidget {
@@ -45,7 +45,7 @@ class _PickupTicketScreenState extends State<PickupTicketScreen> {
         _qrData = jsonEncode(qrPayload);
         _loading = false;
       });
-    } on ApiException catch (e) {
+    } on AppFailure catch (e) {
       if (!mounted) return;
       setState(() {
         _error = e.message;

@@ -3,8 +3,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wafra_frontend/features/auth/presentation/login_screen.dart';
 import 'package:wafra_frontend/features/auth/presentation/email_verification_screen.dart';
-import 'package:wafra_frontend/features/auth/data/auth_repository.dart';
-import 'package:wafra_frontend/core/network/api_service.dart';
+import 'package:wafra_frontend/core/errors/app_failure.dart';
+import 'package:wafra_frontend/features/auth/providers/auth_providers.dart';
 import 'widgets/auth_tab_switcher.dart';
 import 'widgets/auth_input_field.dart';
 
@@ -63,8 +63,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
     setState(() => _loading = true);
     try {
-      final result = await AuthRepository.instance.register(email, password, username);
-      final userId = result['user_id'] as int;
+      final user = await AuthProviders.registerUseCase.execute(username, email, password);
+      final userId = user.userId!;
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
@@ -73,7 +73,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ),
         (r) => false,
       );
-    } on ApiException catch (e) {
+    } on AppFailure catch (e) {
       _showError(e.message);
     } catch (_) {
       _showError('Could not connect to server.');
@@ -226,19 +226,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             height: 27 / 18,
                           ),
                         ),
-                ),
-              ),
-              const SizedBox(height: 4),
-              TextButton(
-                onPressed: () {},
-                child: Text(
-                  'Or continue with Email',
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    height: 21 / 14,
-                    color: const Color(0xFF1A5C38),
-                  ),
                 ),
               ),
               const SizedBox(height: 24),
