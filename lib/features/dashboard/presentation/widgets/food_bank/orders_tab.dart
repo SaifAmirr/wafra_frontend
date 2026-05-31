@@ -13,10 +13,10 @@ class OrdersTab extends StatefulWidget {
   const OrdersTab({super.key, this.onGoBrowse});
 
   @override
-  State<OrdersTab> createState() => _OrdersTabState();
+  State<OrdersTab> createState() => OrdersTabState();
 }
 
-class _OrdersTabState extends State<OrdersTab>
+class OrdersTabState extends State<OrdersTab>
     with SingleTickerProviderStateMixin {
   late final TabController _tc;
   List<Map<String, dynamic>> _reservations = [];
@@ -41,6 +41,8 @@ class _OrdersTabState extends State<OrdersTab>
     _tc.dispose();
     super.dispose();
   }
+
+  Future<void> load() => _load();
 
   Future<void> _load() async {
     setState(() => _loading = true);
@@ -115,55 +117,60 @@ class _OrdersTabState extends State<OrdersTab>
       body: _loading
           ? const Center(
               child: CircularProgressIndicator(color: _kPurple))
-          : RefreshIndicator(
-              onRefresh: _load,
-              color: _kPurple,
-              child: TabBarView(
-                controller: _tc,
-                children: List.generate(4, (i) {
-                  final items = _forTab(i);
-                  if (items.isEmpty) {
-                    return Center(
-                      child: Text(
-                        'No orders here yet.',
-                        style: GoogleFonts.inter(
-                            fontSize: 14,
-                            color: const Color(0xFF8E8E93)),
-                      ),
-                    );
-                  }
-                  return ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: items.length,
-                    separatorBuilder: (_, _) =>
-                        const SizedBox(height: 12),
-                    itemBuilder: (_, idx) {
-                      final s = items[idx]['status'] as String? ?? '';
-                      return FoodBankOrderCard(
-                        data: items[idx],
-                        onCancel: s == 'pending'
-                            ? () => _cancel(
-                                items[idx]['reservation_id'] as int)
-                            : null,
-                        onShowCode: s == 'accepted'
-                            ? () => Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => PickupTicketScreen(
-                                      reservationId: items[idx]
-                                          ['reservation_id'] as int,
-                                    ),
-                                  ),
-                                )
-                            : null,
-                        onFindAlternatives:
-                            (s == 'declined' || s == 'cancelled')
-                                ? widget.onGoBrowse
-                                : null,
-                      );
-                    },
-                  );
-                }),
-              ),
+          : TabBarView(
+              controller: _tc,
+              children: List.generate(4, (i) {
+                final items = _forTab(i);
+                return RefreshIndicator(
+                  onRefresh: _load,
+                  color: _kPurple,
+                  child: items.isEmpty
+                      ? ListView(
+                          children: [
+                            const SizedBox(height: 80),
+                            Center(
+                              child: Text(
+                                'No orders here yet.',
+                                style: GoogleFonts.inter(
+                                    fontSize: 14,
+                                    color: const Color(0xFF8E8E93)),
+                              ),
+                            ),
+                          ],
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: items.length,
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: 12),
+                          itemBuilder: (_, idx) {
+                            final s =
+                                items[idx]['status'] as String? ?? '';
+                            return FoodBankOrderCard(
+                              data: items[idx],
+                              onCancel: s == 'pending'
+                                  ? () => _cancel(
+                                      items[idx]['reservation_id'] as int)
+                                  : null,
+                              onShowCode: s == 'accepted'
+                                  ? () => Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => PickupTicketScreen(
+                                            reservationId: items[idx]
+                                                ['reservation_id'] as int,
+                                          ),
+                                        ),
+                                      )
+                                  : null,
+                              onFindAlternatives:
+                                  (s == 'declined' || s == 'cancelled')
+                                      ? widget.onGoBrowse
+                                      : null,
+                            );
+                          },
+                        ),
+                );
+              }),
             ),
     );
   }

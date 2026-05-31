@@ -9,7 +9,9 @@ const _kPurple = Color(0xFF7C3AED);
 const _kPurpleLight = Color(0xFFF3E8FF);
 
 class BrowseTab extends StatefulWidget {
-  const BrowseTab({super.key});
+  final VoidCallback? onReservationMade;
+
+  const BrowseTab({super.key, this.onReservationMade});
 
   @override
   State<BrowseTab> createState() => _BrowseTabState();
@@ -88,6 +90,7 @@ class _BrowseTabState extends State<BrowseTab> {
           backgroundColor: _kPurple,
         ),
       );
+      widget.onReservationMade?.call();
       _load();
     } on AppFailure catch (e) {
       if (!mounted) return;
