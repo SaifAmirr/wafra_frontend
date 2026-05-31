@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:wafra_frontend/core/constants/app_colors.dart';
 import 'package:wafra_frontend/features/listings/domain/entities/food_listing.dart';
 
-const _kBlue = Color(0xFF2563EB);
+const _kBlue = AppColors.individualBlue;
 
 class FoodCard extends StatelessWidget {
   final FoodListing listing;
@@ -36,14 +37,14 @@ class FoodCard extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Container(
-                    color: listing.imageBg,
-                    child: Icon(
-                      listing.imageIcon,
-                      size: 72,
-                      color: listing.imageIconColor.withValues(alpha: 0.35),
-                    ),
-                  ),
+                  listing.photoUrl != null
+                      ? Image.network(
+                          listing.photoUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stack) =>
+                              _CategoryPlaceholder(listing: listing),
+                        )
+                      : _CategoryPlaceholder(listing: listing),
                   Positioned(
                     top: 12,
                     left: 12,
@@ -170,6 +171,23 @@ class FoodCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _CategoryPlaceholder extends StatelessWidget {
+  final FoodListing listing;
+  const _CategoryPlaceholder({required this.listing});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: listing.imageBg,
+      child: Icon(
+        listing.imageIcon,
+        size: 72,
+        color: listing.imageIconColor.withValues(alpha: 0.35),
       ),
     );
   }
