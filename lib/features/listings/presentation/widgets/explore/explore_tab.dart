@@ -2,13 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:wafra_frontend/core/constants/app_colors.dart';
 import 'package:wafra_frontend/features/listings/data/listings_api_repository.dart';
 import 'package:wafra_frontend/features/listings/domain/entities/food_listing.dart';
 import 'package:wafra_frontend/features/listings/presentation/food_listing_detail_screen.dart';
 import 'package:wafra_frontend/features/notifications/presentation/widgets/notification_bell.dart';
 import 'food_card.dart';
 
-const _kBlue = Color(0xFF2563EB);
+const _kBlue = AppColors.individualBlue;
 const _categories = ['All', 'Cooked Meals', 'Bakery', 'Produce', 'Beverages'];
 
 class ExploreTab extends StatefulWidget {
@@ -74,7 +75,7 @@ class _ExploreTabState extends State<ExploreTab> {
   Future<void> _openDetail(FoodListing listing) async {
     final reserved = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (_) => FoodListingDetailScreen(listing: listing),
+        builder: (_) => FoodListingDetailScreen(listing: listing, roleColor: _kBlue),
       ),
     );
     if (!mounted) return;
@@ -215,10 +216,9 @@ class _ExploreTabState extends State<ExploreTab> {
               ),
             ),
             if (_loadingListings)
-              const SliverFillRemaining(
+              SliverFillRemaining(
                 child: Center(
-                    child: CircularProgressIndicator(
-                        color: Color(0xFF1A5C38))),
+                    child: CircularProgressIndicator(color: _kBlue)),
               )
             else if (_listings.isEmpty)
               SliverFillRemaining(

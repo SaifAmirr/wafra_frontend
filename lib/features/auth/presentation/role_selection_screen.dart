@@ -5,7 +5,6 @@ import 'package:wafra_frontend/features/auth/presentation/individual_profile_scr
 import 'package:wafra_frontend/features/auth/presentation/restaurant_profile_screen.dart';
 import 'package:wafra_frontend/core/errors/app_failure.dart';
 import 'package:wafra_frontend/features/auth/providers/auth_providers.dart';
-import 'package:wafra_frontend/core/errors/app_failure.dart';
 import 'widgets/profile_progress_dots.dart';
 
 enum UserRole { restaurant, individual, foodBank }

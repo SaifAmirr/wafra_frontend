@@ -35,6 +35,7 @@ class ListingsRemoteDataSource {
     required int quantity,
     required String pickupTime,
     required String location,
+    String? photoPath,
     List<String>? dietaryTags,
   }) async {
     try {
@@ -44,6 +45,7 @@ class ListingsRemoteDataSource {
         quantity: quantity,
         pickupTime: pickupTime,
         location: location,
+        photoPath: photoPath,
         dietaryTags: dietaryTags,
       );
     } on AppFailure {

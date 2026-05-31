@@ -50,6 +50,7 @@ class ListingsApiRepository {
     required int quantity,
     required String pickupTime,
     required String location,
+    String? photoPath,
     List<String>? dietaryTags,
   }) =>
       ApiService.instance.createListing(
@@ -58,6 +59,7 @@ class ListingsApiRepository {
         quantity: quantity,
         pickupTime: pickupTime,
         location: location,
+        photoPath: photoPath,
         dietaryTags: dietaryTags,
       );
 }

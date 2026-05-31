@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:wafra_frontend/features/auth/presentation/pending_verification_screen.dart';
 import 'package:wafra_frontend/core/errors/app_failure.dart';
 import 'package:wafra_frontend/features/auth/providers/auth_providers.dart';
-import 'package:wafra_frontend/core/errors/app_failure.dart';
 import 'widgets/profile_form_field.dart';
 import 'widgets/profile_progress_dots.dart';
 

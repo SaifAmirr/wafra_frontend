@@ -30,6 +30,10 @@ class ApiService {
         if (_token != null) 'Authorization': 'Bearer $_token',
       };
 
+  Map<String, String> get _multipartHeaders => {
+        if (_token != null) 'Authorization': 'Bearer $_token',
+      };
+
   // Extracts a refreshed JWT from the JSON body whenever the server provides one.
   void _updateToken(Map<String, dynamic> body) {
     final t = body['token'] as String?;
@@ -272,11 +276,30 @@ class ApiService {
     required int quantity,
     required String pickupTime,
     required String location,
-    String? photoUrl,
+    String? photoPath,
     List<String>? dietaryTags,
   }) async {
+    final uri = Uri.parse('$_base/listings');
+
+    if (photoPath != null) {
+      final req = http.MultipartRequest('POST', uri)
+        ..headers.addAll(_multipartHeaders)
+        ..fields['food_name'] = foodName
+        ..fields['category'] = category
+        ..fields['quantity'] = quantity.toString()
+        ..fields['pickup_time'] = pickupTime
+        ..fields['location'] = location;
+      if (dietaryTags != null && dietaryTags.isNotEmpty) {
+        req.fields['dietary_tags'] = jsonEncode(dietaryTags);
+      }
+      req.files.add(await http.MultipartFile.fromPath('photo', photoPath));
+      final streamed = await req.send();
+      final res = await http.Response.fromStream(streamed);
+      return _handle(res);
+    }
+
     final res = await _client.post(
-      Uri.parse('$_base/listings'),
+      uri,
       headers: _authHeaders,
       body: jsonEncode(<String, dynamic>{
         'food_name': foodName,
@@ -284,7 +307,6 @@ class ApiService {
         'quantity': quantity,
         'pickup_time': pickupTime,
         'location': location,
-        if (photoUrl != null) 'photo_url': photoUrl,
         if (dietaryTags != null && dietaryTags.isNotEmpty)
           'dietary_tags': dietaryTags,
       }),

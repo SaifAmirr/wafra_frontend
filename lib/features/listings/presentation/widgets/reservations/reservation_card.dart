@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:wafra_frontend/core/constants/app_colors.dart';
 
 class ReservationCard extends StatelessWidget {
   final Map<String, dynamic> data;
@@ -17,8 +18,8 @@ class ReservationCard extends StatelessWidget {
 
   static const _statusColors = {
     'pending': Color(0xFFF59E0B),
-    'accepted': Color(0xFF1A5C38),
-    'completed': Color(0xFF2563EB),
+    'accepted': AppColors.individualBlue,
+    'completed': AppColors.individualBlue,
     'declined': Color(0xFFEF4444),
     'cancelled': Color(0xFF94A3B8),
   };
@@ -159,7 +160,7 @@ class _CardActions extends StatelessWidget {
         child: ElevatedButton.icon(
           onPressed: onShowCode,
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF1A5C38),
+            backgroundColor: AppColors.individualBlue,
             foregroundColor: Colors.white,
             elevation: 0,
             shape: RoundedRectangleBorder(
@@ -180,7 +181,7 @@ class _CardActions extends StatelessWidget {
         child: TextButton.icon(
           onPressed: onFindSimilar,
           style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFF2563EB),
+            foregroundColor: AppColors.individualBlue,
             padding: const EdgeInsets.symmetric(vertical: 10),
           ),
           icon: const Icon(Icons.search, size: 16),

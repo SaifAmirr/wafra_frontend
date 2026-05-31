@@ -10,6 +10,7 @@ class CreateListingUseCase {
     required int quantity,
     required String pickupTime,
     required String location,
+    String? photoPath,
     List<String>? dietaryTags,
   }) =>
       _repository.createListing(
@@ -18,6 +19,7 @@ class CreateListingUseCase {
         quantity: quantity,
         pickupTime: pickupTime,
         location: location,
+        photoPath: photoPath,
         dietaryTags: dietaryTags,
       );
 }

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wafra_frontend/core/errors/app_failure.dart';
+import 'package:wafra_frontend/core/constants/app_colors.dart';
 import 'package:wafra_frontend/features/listings/data/listings_api_repository.dart';
 import 'widgets/reservations/reservation_tab_bar.dart';
 import 'widgets/reservations/reservation_card.dart';
@@ -139,10 +140,10 @@ class _MyReservationsScreenState extends State<MyReservationsScreen>
               child: _loading
                   ? const Center(
                       child: CircularProgressIndicator(
-                          color: Color(0xFF2563EB)))
+                          color: AppColors.individualBlue))
                   : RefreshIndicator(
                       onRefresh: _load,
-                      color: const Color(0xFF2563EB),
+                      color: AppColors.individualBlue,
                       child: TabBarView(
                         controller: _tabController,
                         children: _tabs.map((tab) {
