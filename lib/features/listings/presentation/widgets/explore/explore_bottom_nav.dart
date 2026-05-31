@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:wafra_frontend/core/constants/app_colors.dart';
 
-const _kBlue = Color(0xFF2563EB);
+const _kBlue = AppColors.individualBlue;
 
 class ExploreBottomNav extends StatelessWidget {
   final int currentIndex;

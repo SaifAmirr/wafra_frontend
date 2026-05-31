@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:wafra_frontend/core/constants/app_colors.dart';
 
 class ReservationTabBar extends StatelessWidget {
   final TabController controller;
@@ -17,7 +18,7 @@ class ReservationTabBar extends StatelessWidget {
       controller: controller,
       isScrollable: true,
       tabAlignment: TabAlignment.start,
-      indicatorColor: const Color(0xFF2563EB),
+      indicatorColor: AppColors.individualBlue,
       indicatorWeight: 2.5,
       dividerColor: const Color(0xFFE2E8F0),
       labelPadding: const EdgeInsets.symmetric(horizontal: 16),
@@ -25,7 +26,7 @@ class ReservationTabBar extends StatelessWidget {
           GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14),
       unselectedLabelStyle:
           GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 14),
-      labelColor: const Color(0xFF2563EB),
+      labelColor: AppColors.individualBlue,
       unselectedLabelColor: const Color(0xFF94A3B8),
       tabs: tabs.map((t) => Tab(text: t)).toList(),
     );

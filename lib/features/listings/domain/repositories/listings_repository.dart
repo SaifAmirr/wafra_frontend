@@ -9,6 +9,7 @@ abstract class ListingsRepository {
     required int quantity,
     required String pickupTime,
     required String location,
+    String? photoPath,
     List<String>? dietaryTags,
   });
   Future<void> confirmPickup(String pickupCode, {int? reservationId});

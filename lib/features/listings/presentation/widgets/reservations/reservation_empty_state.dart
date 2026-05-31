@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:wafra_frontend/core/constants/app_colors.dart';
 
 class ReservationEmptyState extends StatelessWidget {
   final String tabLabel;
@@ -44,7 +45,7 @@ class ReservationEmptyState extends StatelessWidget {
           child: ElevatedButton(
             onPressed: onBrowse,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2563EB),
+              backgroundColor: AppColors.individualBlue,
               foregroundColor: Colors.white,
               elevation: 0,
               shape: RoundedRectangleBorder(

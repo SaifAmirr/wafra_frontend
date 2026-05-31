@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wafra_frontend/features/dashboard/data/dashboard_repository.dart';
+import 'package:wafra_frontend/core/constants/app_colors.dart';
 import 'package:wafra_frontend/features/listings/domain/entities/food_listing.dart';
 import 'package:wafra_frontend/features/listings/presentation/food_listing_detail_screen.dart';
 import 'package:wafra_frontend/features/notifications/presentation/widgets/notification_bell.dart';
@@ -75,7 +76,7 @@ class _FoodBankHomeTabState extends State<FoodBankHomeTab> {
   Future<void> _openDetail(FoodListing listing) async {
     final reserved = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-          builder: (_) => FoodListingDetailScreen(listing: listing)),
+          builder: (_) => FoodListingDetailScreen(listing: listing, roleColor: AppColors.foodBankPurple)),
     );
     if (!mounted) return;
     if (reserved == true) {

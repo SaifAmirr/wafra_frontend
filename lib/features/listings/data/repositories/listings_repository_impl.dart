@@ -20,6 +20,7 @@ class ListingsRepositoryImpl implements ListingsRepository {
     required int quantity,
     required String pickupTime,
     required String location,
+    String? photoPath,
     List<String>? dietaryTags,
   }) =>
       _dataSource.createListing(
@@ -28,6 +29,7 @@ class ListingsRepositoryImpl implements ListingsRepository {
         quantity: quantity,
         pickupTime: pickupTime,
         location: location,
+        photoPath: photoPath,
         dietaryTags: dietaryTags,
       );
 

@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:wafra_frontend/core/errors/app_failure.dart';
 import 'package:wafra_frontend/core/utils/date_utils.dart';
 import 'package:wafra_frontend/features/listings/data/listings_api_repository.dart';
@@ -40,6 +43,8 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
   TimeOfDay? _pickupTime;
   bool _loading = false;
   String? _address;
+  File? _photo;
+  final _picker = ImagePicker();
 
   @override
   void initState() {
@@ -61,6 +66,50 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
       final profile = me['profile'] as Map<String, dynamic>?;
       setState(() => _address = profile?['full_address'] as String?);
     } catch (_) {}
+  }
+
+  Future<void> _pickPhoto() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                    color: const Color(0xFFE2E8F0),
+                    borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined,
+                  color: Color(0xFF1A5C38)),
+              title: Text('Take a photo',
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined,
+                  color: Color(0xFF1A5C38)),
+              title: Text('Choose from gallery',
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (source == null) return;
+    final picked =
+        await _picker.pickImage(source: source, imageQuality: 85, maxWidth: 1200);
+    if (picked != null && mounted) {
+      setState(() => _photo = File(picked.path));
+    }
   }
 
   Future<void> _pickDate() async {
@@ -137,6 +186,7 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
         quantity: int.parse(qtyStr),
         pickupTime: pickupDt.toIso8601String(),
         location: location,
+        photoPath: _photo?.path,
         dietaryTags: _selectedDietary.toList(),
       );
       if (!mounted) return;
@@ -198,50 +248,81 @@ class _PostSurplusFoodScreenState extends State<PostSurplusFoodScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   GestureDetector(
-                    onTap: () {},
-                    child: CustomPaint(
-                      painter: const DashedBorderPainter(),
-                      child: Container(
-                        width: double.infinity,
-                        height: 140,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              width: 44,
-                              height: 44,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF1A5C38),
-                                shape: BoxShape.circle,
+                    onTap: _pickPhoto,
+                    child: _photo != null
+                        ? Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.file(
+                                  _photo!,
+                                  width: double.infinity,
+                                  height: 180,
+                                  fit: BoxFit.cover,
+                                ),
                               ),
-                              child: const Icon(Icons.camera_alt_outlined,
-                                  color: Colors.white, size: 22),
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              'Add Photo',
-                              style: GoogleFonts.inter(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                                color: const Color(0xFF0F172A),
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: GestureDetector(
+                                  onTap: () => setState(() => _photo = null),
+                                  child: Container(
+                                    width: 30,
+                                    height: 30,
+                                    decoration: const BoxDecoration(
+                                      color: Colors.black54,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.close,
+                                        color: Colors.white, size: 16),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                        : CustomPaint(
+                            painter: const DashedBorderPainter(),
+                            child: Container(
+                              width: double.infinity,
+                              height: 140,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    width: 44,
+                                    height: 44,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFF1A5C38),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.camera_alt_outlined,
+                                        color: Colors.white, size: 22),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    'Add Photo',
+                                    style: GoogleFonts.inter(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                      color: const Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    'JPG, PNG up to 5MB',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 12,
+                                      color: const Color(0xFF94A3B8),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(height: 3),
-                            Text(
-                              'Support JPG, PNG up to 5MB',
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                color: const Color(0xFF94A3B8),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                          ),
                   ),
                   const SizedBox(height: 24),
                   const SectionLabel('Food Name'),

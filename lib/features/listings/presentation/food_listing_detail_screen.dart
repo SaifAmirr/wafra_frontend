@@ -6,8 +6,13 @@ import 'package:wafra_frontend/features/listings/domain/entities/food_listing.da
 
 class FoodListingDetailScreen extends StatefulWidget {
   final FoodListing listing;
+  final Color roleColor;
 
-  const FoodListingDetailScreen({super.key, required this.listing});
+  const FoodListingDetailScreen({
+    super.key,
+    required this.listing,
+    required this.roleColor,
+  });
 
   @override
   State<FoodListingDetailScreen> createState() =>
@@ -26,9 +31,9 @@ class _FoodListingDetailScreenState extends State<FoodListingDetailScreen> {
       await ApiService.instance.createReservation(id, 1);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Reservation made successfully!'),
-          backgroundColor: Color(0xFF1A5C38),
+        SnackBar(
+          content: const Text('Reservation made successfully!'),
+          backgroundColor: widget.roleColor,
         ),
       );
       // Signal the caller (e.g. ExploreScreen) that a reservation was made so it
@@ -351,7 +356,7 @@ class _FoodListingDetailScreenState extends State<FoodListingDetailScreen> {
               child: ElevatedButton(
                 onPressed: _reserving ? null : _reserve,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2563EB),
+                  backgroundColor: widget.roleColor,
                   foregroundColor: Colors.white,
                   minimumSize: const Size(double.infinity, 56),
                   elevation: 0,
