@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wafra_frontend/features/dashboard/data/dashboard_repository.dart';
+import 'package:wafra_frontend/features/dashboard/domain/entities/user_stats.dart';
+import 'package:wafra_frontend/features/dashboard/providers/dashboard_providers.dart';
 import 'widgets/profile/profile_header.dart';
 import 'widgets/profile/profile_impact_section.dart';
 import 'widgets/profile/profile_badges.dart';
@@ -15,6 +17,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   Map<String, dynamic>? _user;
+  UserStats? _stats;
   bool _loading = false;
 
   @override
@@ -28,7 +31,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       final data = await DashboardRepository.instance.getMe();
       if (!mounted) return;
-      setState(() => _user = data['user'] as Map<String, dynamic>?);
+      final user = data['user'] as Map<String, dynamic>?;
+      setState(() => _user = user);
+
+      final role = user?['role'] as String? ?? 'individual';
+      final stats =
+          await DashboardProviders.getUserStatsUseCase.execute(role);
+      if (!mounted) return;
+      setState(() => _stats = stats);
     } catch (_) {
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -81,7 +91,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   SliverToBoxAdapter(
-                    child: ProfileImpactSection(role: _role, accent: _accent),
+                    child: ProfileImpactSection(
+                      role: _role,
+                      accent: _accent,
+                      stats: _stats,
+                    ),
                   ),
                   SliverToBoxAdapter(
                     child: Padding(
@@ -103,7 +117,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         padding:
                             const EdgeInsets.symmetric(horizontal: 20),
                         scrollDirection: Axis.horizontal,
-                        children: profileBadgesForRole(_role, _accent),
+                        children:
+                            profileBadgesForRole(_role, _accent, _stats),
                       ),
                     ),
                   ),

@@ -1,25 +1,75 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:wafra_frontend/features/dashboard/domain/entities/user_stats.dart';
 
-List<Widget> profileBadgesForRole(String role, Color color) {
+List<Widget> profileBadgesForRole(
+    String role, Color color, UserStats? stats) {
   final badges = switch (role) {
     'restaurant' => [
-        ('First Listing', Icons.post_add, true),
-        ('10 Meals Donated', Icons.volunteer_activism, false),
-        ('Food Bank Partner', Icons.handshake_outlined, false),
-        ('100 Meals Hero', Icons.emoji_events_outlined, false),
+        (
+          'First Listing',
+          Icons.post_add,
+          (stats?.listingsPosted ?? 0) >= 1,
+        ),
+        (
+          '10 Meals Donated',
+          Icons.volunteer_activism,
+          (stats?.mealsDonated ?? 0) >= 10,
+        ),
+        (
+          'Food Bank Partner',
+          Icons.handshake_outlined,
+          (stats?.partnersServed ?? 0) >= 1,
+        ),
+        (
+          '100 Meals Hero',
+          Icons.emoji_events_outlined,
+          (stats?.mealsDonated ?? 0) >= 100,
+        ),
       ],
     'foodbank' => [
-        ('First Pickup', Icons.check_circle_outline, true),
-        ('100 kg Collected', Icons.scale_outlined, false),
-        ('5 Partners', Icons.storefront_outlined, false),
-        ('Community Hero', Icons.emoji_events_outlined, false),
+        (
+          'First Pickup',
+          Icons.check_circle_outline,
+          (stats?.pickupsCompleted ?? 0) >= 1,
+        ),
+        (
+          '100 Meals Collected',
+          Icons.scale_outlined,
+          (stats?.mealsReceived ?? 0) >= 100,
+        ),
+        (
+          '5 Partners',
+          Icons.storefront_outlined,
+          (stats?.restaurantsVisited ?? 0) >= 5,
+        ),
+        (
+          'Community Hero',
+          Icons.emoji_events_outlined,
+          (stats?.mealsReceived ?? 0) >= 500,
+        ),
       ],
     _ => [
-        ('First Meal', Icons.dining_outlined, true),
-        ('5 Pickups', Icons.check_circle_outline, false),
-        ('Regular Visitor', Icons.repeat_outlined, false),
-        ('Community Member', Icons.people_outline, false),
+        (
+          'First Meal',
+          Icons.dining_outlined,
+          (stats?.pickupsCompleted ?? 0) >= 1,
+        ),
+        (
+          '5 Pickups',
+          Icons.check_circle_outline,
+          (stats?.pickupsCompleted ?? 0) >= 5,
+        ),
+        (
+          'Regular Visitor',
+          Icons.repeat_outlined,
+          (stats?.restaurantsVisited ?? 0) >= 3,
+        ),
+        (
+          'Community Member',
+          Icons.people_outline,
+          (stats?.pickupsCompleted ?? 0) >= 10,
+        ),
       ],
   };
 
