@@ -44,6 +44,7 @@ class ReservationCard extends StatelessWidget {
         data['listing']?['restaurant_name'] as String? ??
         'Restaurant';
     final qty = data['requested_quantity'] as int? ?? 1;
+    final photoUrl = data['photo_url'] as String?;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -60,15 +61,18 @@ class ReservationCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(Icons.shopping_bag_outlined,
-                    color: color, size: 22),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: photoUrl != null
+                    ? Image.network(
+                        photoUrl,
+                        width: 44,
+                        height: 44,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stack) =>
+                            _FallbackThumb(color: color),
+                      )
+                    : _FallbackThumb(color: color),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -121,6 +125,21 @@ class ReservationCard extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _FallbackThumb extends StatelessWidget {
+  final Color color;
+  const _FallbackThumb({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 44,
+      height: 44,
+      color: color.withValues(alpha: 0.1),
+      child: Icon(Icons.shopping_bag_outlined, color: color, size: 22),
     );
   }
 }
